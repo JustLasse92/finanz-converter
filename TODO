@@ -1,0 +1,18 @@
+1. Zusätzliche Umsätze Januar ergänzen (Miete, Bargeldausgaben) DONE
+2. Berechnungen in der Ausgabe hinzufügen
+    - Gesamte Einnahmen
+    - Fixe Ausgaben
+    - Variable Ausgaben
+    - Gesamte Ausgaben
+    - Monatlicher Überschuss
+    - Komplette Sparrate (Sparrate + Monatlicher Überschuss)
+    - Bilanz
+    - Cash
+    - Aktien
+    - Bitcoin
+    - Differenz zwischen berechneter Bilanz und tatsächlicher Bilanz
+3. Aktienkurse und gehaltene Anteile hinzufügen und ausgeben
+4. Geldmengen angeben (Girokonto, Tagesgeldkonto, Verrechnungskonto, Bitcoin, Bargeld)
+5. Restliche Monate hinzufügen
+6. Klassen und Methoden dokumentieren
+7. README schreiben

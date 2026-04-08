@@ -1,4 +1,7 @@
-package org.example;
+package de.finanz.converter;
+
+import de.finanz.converter.transaction.EUmsatztyp;
+import de.finanz.converter.transaction.Transaction;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -9,8 +12,11 @@ public class TransactionCategoryMatcher {
         return transaction.getSender().toLowerCase().contains(sender.toLowerCase());
     }
 
-    public static boolean containsVerwendungszweck(Transaction transaction, String verwendungszweck) {
-        return transaction.getVerwendungszweck().toLowerCase().contains(verwendungszweck.toLowerCase());
+    public static boolean containsOneVerwendungszweck(Transaction transaction, String... verwendungszwecke) {
+        String transactionVerwendungszweck = transaction.getVerwendungszweck().toLowerCase();
+        return Arrays.stream(verwendungszwecke)
+                .map(String::toLowerCase)
+                .anyMatch(transactionVerwendungszweck::contains);
     }
 
     public static boolean containsOneEmpfaenger(Transaction transaction, String... empfaenger) {

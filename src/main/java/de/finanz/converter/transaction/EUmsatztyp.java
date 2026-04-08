@@ -1,4 +1,4 @@
-package org.example;
+package de.finanz.converter.transaction;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
