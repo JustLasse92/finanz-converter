@@ -8,12 +8,12 @@
     - Komplette Sparrate (Sparrate + Monatlicher Überschuss) DONE
     - Aktien DONE
     - Bitcoin DONE
-    - Cash
+    - Cash (Girokonto, Tagesgeldkonto, Verrechnungskonto, Aktien VL)
     - Bilanz ggf. noch nicht vollständig
     - Girokonto (Stand zum Ende des Monats berechnen)
     - Bargeldausgaben (Bargeld_heute - Bargeld_vorher - Bargeld_abhebungen)
     - Differenz zwischen berechneter Bilanz und tatsächlicher Bilanz
-3. Aktienkurse und gehaltene Anteile hinzufügen und ausgeben DONE*
+3. Aktienkurse und gehaltene Anteile hinzufügen und ausgeben DONE
 4. Geldmengen angeben
  - Girokonto (nur vorm Vorjahr)
  - Tagesgeldkonto

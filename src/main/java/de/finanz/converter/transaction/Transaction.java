@@ -7,6 +7,7 @@ import com.opencsv.bean.CsvNumber;
 import lombok.Data;
 
 import java.time.Month;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -93,7 +94,9 @@ public class Transaction {
                 && (transaction.getBetrag() == null || this.getBetrag().equals(transaction.getBetrag()));
     }
 
-    public Month getMonthOfBuchungsdatum() {
-        return Month.of(getBuchungsdatum().get(Calendar.MONTH) + 1);
+    public YearMonth getMonthOfBuchungsdatum() {
+        //TODO TESTEN
+        return YearMonth.of(getBuchungsdatum().get(Calendar.YEAR),
+                Month.of(getBuchungsdatum().get(Calendar.MONTH) + 1));
     }
 }

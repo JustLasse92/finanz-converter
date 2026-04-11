@@ -2,25 +2,25 @@ package de.finanz.converter.kategorie;
 
 import lombok.Getter;
 
-import java.time.Month;
-import java.util.EnumMap;
+import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
-public class Categorie {
-    private ECategoryType type;
-    private Map<Month, Double> values;
+public class Categorie<T> {
+    private T type;
+    private Map<YearMonth, Double> values;
 
-    public Categorie(ECategoryType type) {
+    public Categorie(T type) {
         this.type = type;
-        this.values = new EnumMap<>(Month.class);
+        this.values = new HashMap<>();
     }
 
-    public void addValue(Month monat, double value) {
-        values.put(monat, value + getValue(monat));
+    public void addValue(YearMonth yearMonth, double value) {
+        values.put(yearMonth, value + getValue(yearMonth));
     }
 
-    public double getValue(Month monat) {
-        return values.getOrDefault(monat, 0.0);
+    public double getValue(YearMonth yearMonth) {
+        return values.getOrDefault(yearMonth, 0.0);
     }
 }

@@ -1,5 +1,7 @@
 package de.finanz.converter.bilanz;
 
+import de.finanz.converter.cash.AvailableCash;
+import de.finanz.converter.io.CSVFinanzReader;
 import de.finanz.converter.kategorie.Categorie;
 import de.finanz.converter.kategorie.ECategoryType;
 import de.finanz.converter.stocks.SharedHeld;
@@ -8,6 +10,7 @@ import de.finanz.converter.transaction.Transaction;
 import de.finanz.converter.transaction.TransactionHelper;
 import lombok.Getter;
 
+import java.io.IOException;
 import java.time.Month;
 import java.util.Collection;
 import java.util.HashMap;
@@ -19,12 +22,19 @@ import java.util.stream.Collectors;
 public class Bilanz {
     private List<SharedHeld> sharedHelds;
     private List<StockPrice> stockPrices;
+    private List<Transaction> transactions;
+    private List<AvailableCash> availableCashes;
     private Map<ECategoryType, Categorie> categories;
 
-    public Bilanz(List<Transaction> transactions, List<StockPrice> stockPrices, List<SharedHeld> sharedHelds) {
-        categories = new HashMap<>();
-        this.stockPrices = stockPrices;
-        this.sharedHelds = sharedHelds;
+    public Bilanz() throws IOException {
+        CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
+        TransactionHelper transactionHelper = new TransactionHelper();
+        this.categories = new HashMap<>();
+        this.stockPrices = csvFinanzReader.readAllStockPrices();
+        this.sharedHelds = csvFinanzReader.readAllSharedHelds();
+        this.availableCashes = csvFinanzReader.readAvailableCash();
+        // TODO TransactionHelper schöner machen
+        transactions = transactionHelper.readAndNormalizeTransactions();
         transactions.stream()
                 .map(TransactionHelper::mapToCategorie)
                 .forEach(this::addCategoryValues);

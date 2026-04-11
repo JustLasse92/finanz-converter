@@ -9,6 +9,7 @@ import de.finanz.converter.stocks.SharedHeld;
 import de.finanz.converter.stocks.StockPrice;
 
 import java.time.Month;
+import java.time.YearMonth;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -140,29 +141,36 @@ public class Calculator {
     }
 
     private void calculateEinnahmenGesamt(Collection<Categorie> categories) {
-        for (Month month : Month.values()) {
-            double value = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.EINKOMMEN), month);
-            addCalculation(ECalculationType.EINNAMEN_GESAMT, month, value);
+        for (YearMonth yearMonth : getYearMonths(categories)) {
+            double value = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.EINKOMMEN), yearMonth);
+            addCalculation(ECalculationType.EINNAMEN_GESAMT, yearMonth, value);
         }
     }
 
+    private Collection<YearMonth> getYearMonths(Collection<Categorie> categories) {
+        return categories.stream()
+                .map(categorie -> categorie.getValues().keySet())
+                .flatMap(Collection::stream)
+                .distinct()
+                .toList();
+    }
 
     private double sumValuesOfSuperCategoryTypes(Collection<Categorie> categories,
-                                                 Collection<ESuperCategoryType> superCategoryTypes, Month month) {
-        return sumValuesOfAllTypes(categories, superCategoryTypes, List.of(), month);
+                                                 Collection<ESuperCategoryType> superCategoryTypes, YearMonth yearMonth) {
+        return sumValuesOfAllTypes(categories, superCategoryTypes, List.of(), yearMonth);
     }
 
     private double sumValuesOfCategoryTypes(Collection<Categorie> categories, Collection<ECategoryType> categoryTypes
-            , Month month) {
-        return sumValuesOfAllTypes(categories, List.of(), categoryTypes, month);
+            , YearMonth yearMonth) {
+        return sumValuesOfAllTypes(categories, List.of(), categoryTypes, yearMonth);
     }
 
     private double sumValuesOfAllTypes(Collection<Categorie> categories,
                                        Collection<ESuperCategoryType> superCategoryTypes,
-                                       Collection<ECategoryType> categoryTypes, Month month) {
+                                       Collection<ECategoryType> categoryTypes, YearMonth yearMonth) {
         return categories.stream()
                 .filter(categorie -> superCategoryTypes.contains(categorie.getType().getSuperCategoryType()) || categoryTypes.contains(categorie.getType()))
-                .map(categorie -> categorie.getValue(month))
+                .map(categorie -> categorie.getValue(yearMonth))
                 .mapToDouble(d -> d)
                 .sum();
     }
