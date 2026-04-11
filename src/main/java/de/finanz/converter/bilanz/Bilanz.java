@@ -2,6 +2,7 @@ package de.finanz.converter.bilanz;
 
 import de.finanz.converter.kategorie.Categorie;
 import de.finanz.converter.kategorie.ECategoryType;
+import de.finanz.converter.stocks.SharedHeld;
 import de.finanz.converter.stocks.StockPrice;
 import de.finanz.converter.transaction.Transaction;
 import de.finanz.converter.transaction.TransactionHelper;
@@ -16,14 +17,17 @@ import java.util.stream.Collectors;
 
 @Getter
 public class Bilanz {
-    List<StockPrice> stockPrices;
-    private Map<ECategoryType, Categorie> categories = new HashMap<>();
+    private List<SharedHeld> sharedHelds;
+    private List<StockPrice> stockPrices;
+    private Map<ECategoryType, Categorie> categories;
 
-    public Bilanz(List<Transaction> transactions, List<StockPrice> stockPrices) {
+    public Bilanz(List<Transaction> transactions, List<StockPrice> stockPrices, List<SharedHeld> sharedHelds) {
+        categories = new HashMap<>();
+        this.stockPrices = stockPrices;
+        this.sharedHelds = sharedHelds;
         transactions.stream()
                 .map(TransactionHelper::mapToCategorie)
                 .forEach(this::addCategoryValues);
-        this.stockPrices = stockPrices;
     }
 
     public void addCategoryValues(Categorie k) {

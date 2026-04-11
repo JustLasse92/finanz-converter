@@ -2,6 +2,8 @@ package de.finanz.converter.io;
 
 import com.opencsv.CSVWriter;
 import de.finanz.converter.bilanz.Bilanz;
+import de.finanz.converter.calculation.Calculator;
+import de.finanz.converter.calculation.ECalculationType;
 import de.finanz.converter.kategorie.ECategoryType;
 import de.finanz.converter.kategorie.ESuperCategoryType;
 
@@ -16,10 +18,10 @@ import java.util.Locale;
 
 public class CSVExporter {
 
-    public static void export(Bilanz bilanz, String datei) throws IOException {
+    public static void export(Bilanz bilanz, String outputFileName) throws IOException {
 
         CSVWriter writer = new CSVWriter(
-                new FileWriter(datei),
+                new FileWriter(outputFileName),
                 ';',
                 CSVWriter.NO_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
@@ -53,7 +55,7 @@ public class CSVExporter {
                 for (Month month : gesetzteMonate) {
                     // TODO wenn in keinem Monat ein Wert dazu eingetragen wurde, soll die Zeile gar nicht
                     //  geschrieben werden
-                    rows.add(String.valueOf(bilanz.getCategoryValue(categoryType, month)));
+                    rows.add(bilanz.getCategoryValue(categoryType, month) + " €");
                 }
 
                 writer.writeNext(rows.toArray(String[]::new));
@@ -61,6 +63,16 @@ public class CSVExporter {
             writer.writeNext(new String[0]); //Leerzeile
         }
 
+        Calculator calculator = new Calculator(bilanz);
+        for (ECalculationType calculationType : ECalculationType.values()) {
+            List<String> rows = new ArrayList<>();
+            rows.add(calculationType.getName());
+            for (Month month : gesetzteMonate) {
+                rows.add(calculator.getCalculationValue(calculationType, month) + " €");
+            }
+
+            writer.writeNext(rows.toArray(String[]::new));
+        }
 
         writer.close();
     }

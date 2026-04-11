@@ -16,32 +16,29 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @AllArgsConstructor
-public abstract class CSVReader<T> {
+public class CSVReader {
 
-    // Wird nur benötigt um die Class zur Laufzeit anzugeben
-    private Class<T> type;
-
-    public List<T> readTransactions(Path path) throws IOException {
+    public <T> List<T> readCSV(Path path, Class<T> type) throws IOException {
         if (Files.isDirectory(path)) {
-            return readTransactionsFolder(path);
+            return readCSVFolder(path, type);
         } else {
-            return readTransactionsFile(path);
+            return readCSVFile(path, type);
         }
     }
 
-    private List<T> readTransactionsFolder(Path path) throws IOException {
+    private <T> List<T> readCSVFolder(Path path, Class<T> type) throws IOException {
         List<T> transactions = new ArrayList<>();
         try (Stream<Path> paths = Files.list(path)) {
             List<Path> files = paths.filter(p -> p.toString().endsWith(".csv"))
                     .toList();
             for (Path p : files) {
-                transactions.addAll(readTransactionsFile(p));
+                transactions.addAll(readCSVFile(p, type));
             }
         }
         return transactions;
     }
 
-    private List<T> readTransactionsFile(Path path) throws IOException {
+    private <T> List<T> readCSVFile(Path path, Class<T> type) throws IOException {
         try (InputStream is = Files.newInputStream(path);
              // BOMInputStream wird benötigt, da Excel und LibreWriter als ertes Zeichen eine BOM schreiben
              // (Byte Order Mark -> \uFEFF = UTF-8 BOM)

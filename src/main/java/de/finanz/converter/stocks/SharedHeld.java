@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 @Data
-public class StockPrice {
+public class SharedHeld {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yy");
 
@@ -23,16 +23,16 @@ public class StockPrice {
     private String name;
 
 
-    @CsvBindByName(column = "Kurs")
+    @CsvBindByName(column = "Gehaltene Anteile")
     @CsvNumber(value = "#.##")
-    private Double kurs;
+    private Double gehalteneAnteile;
 
     @Override
     public String toString() {
         return "Transaction{" +
                 "\ndatum=" + DATE_TIME_FORMATTER.format(this.datum.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()) +
                 "\nname='" + name + '\'' +
-                "\nkurs='" + kurs + '\'' +
+                "\ngehalteneAnteile='" + gehalteneAnteile + '\'' +
                 '}';
     }
 
