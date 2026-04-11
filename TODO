@@ -15,10 +15,10 @@
     - Differenz zwischen berechneter Bilanz und tatsächlicher Bilanz
 3. Aktienkurse und gehaltene Anteile hinzufügen und ausgeben DONE*
 4. Geldmengen angeben
+ - Girokonto (nur vorm Vorjahr)
  - Tagesgeldkonto
  - Verrechnungskonto
- - Bargeld
-5. Girokonto und Bargeld Stand vom Vorjahr angeben
-6. Restliche Monate hinzufügen
-7. Klassen und Methoden dokumentieren
-8. README schreiben
+ - Bargeld (jeder Monat + Vorjahr)
+5. Restliche Monate hinzufügen
+6. Klassen und Methoden dokumentieren
+7. README schreiben
