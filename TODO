@@ -11,7 +11,7 @@
     - Cash
     - Bilanz ggf. noch nicht vollständig
     - Girokonto (Stand zum Ende des Monats berechnen)
-    - Bargeldausgaben
+    - Bargeldausgaben (Bargeld_heute - Bargeld_vorher - Bargeld_abhebungen)
     - Differenz zwischen berechneter Bilanz und tatsächlicher Bilanz
 3. Aktienkurse und gehaltene Anteile hinzufügen und ausgeben DONE*
 4. Geldmengen angeben
