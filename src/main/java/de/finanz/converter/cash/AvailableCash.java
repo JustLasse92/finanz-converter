@@ -6,6 +6,8 @@ import com.opencsv.bean.CsvDate;
 import com.opencsv.bean.CsvNumber;
 import lombok.Getter;
 
+import java.time.Month;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -32,5 +34,10 @@ public class AvailableCash {
                 "\ntyp=" + typ +
                 "\nbetrag='" + betrag +
                 '}';
+    }
+
+    public YearMonth getYearMonthOfDatum() {
+        return YearMonth.of(getDatum().get(Calendar.YEAR),
+                Month.of(getDatum().get(Calendar.MONTH) + 1));
     }
 }

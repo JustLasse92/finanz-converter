@@ -61,6 +61,13 @@ public class Bilanz {
         return 0d;
     }
 
+    public List<AvailableCash> getAvailableCashesInYearMonths() {
+        List<YearMonth> yearMonthsSorted = getYearMonthsSorted();
+        return getAvailableCashes().stream()
+                .filter(cash -> yearMonthsSorted.contains(cash.getYearMonthOfDatum()))
+                .toList();
+    }
+
     public List<YearMonth> getYearMonthsSorted() {
         return getCategories().values()
                 .stream()

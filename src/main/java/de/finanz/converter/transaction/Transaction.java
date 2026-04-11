@@ -94,8 +94,7 @@ public class Transaction {
                 && (transaction.getBetrag() == null || this.getBetrag().equals(transaction.getBetrag()));
     }
 
-    public YearMonth getMonthOfBuchungsdatum() {
-        //TODO TESTEN
+    public YearMonth getYearMonthOfBuchungsdatum() {
         return YearMonth.of(getBuchungsdatum().get(Calendar.YEAR),
                 Month.of(getBuchungsdatum().get(Calendar.MONTH) + 1));
     }

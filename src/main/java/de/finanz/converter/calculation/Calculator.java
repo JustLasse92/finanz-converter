@@ -1,6 +1,7 @@
 package de.finanz.converter.calculation;
 
 import de.finanz.converter.bilanz.Bilanz;
+import de.finanz.converter.cash.AvailableCash;
 import de.finanz.converter.exception.FinanzConverterException;
 import de.finanz.converter.kategorie.Categorie;
 import de.finanz.converter.kategorie.ECategoryType;
@@ -20,10 +21,13 @@ public class Calculator {
 
     public Calculator(Bilanz bilanz) {
         calculations = new HashMap<>();
+
         Collection<Categorie<ECategoryType>> categories = bilanz.getAllCategories();
         List<StockPrice> stockPrices = bilanz.getStockPrices();
         List<SharedHeld> sharedHelds = bilanz.getSharedHelds();
         List<YearMonth> yearMonthsSorted = bilanz.getYearMonthsSorted();
+        List<AvailableCash> availableCashes = bilanz.getAvailableCashes();
+
         calculateEinnahmenGesamt(categories, yearMonthsSorted);
         calculateAusgabenFix(categories, yearMonthsSorted);
         calculateAusgabenVariabel(categories, yearMonthsSorted);
@@ -32,6 +36,7 @@ public class Calculator {
         calculateSparrateGesamt(categories, yearMonthsSorted);
         calculateStocks(sharedHelds, stockPrices);
         calculateMonatlicheBilanz(yearMonthsSorted);
+        calculateCash(availableCashes);
     }
 
     public Double getCalculationValue(ECalculationType calculationType, YearMonth yearMonth) {
@@ -39,6 +44,12 @@ public class Calculator {
             return calculations.get(calculationType).getValue(yearMonth);
         }
         return 0.0;
+    }
+
+    private void calculateCash(List<AvailableCash> availableCashes) {
+        for (AvailableCash availableCash : availableCashes) {
+            addCalculation(ECalculationType.CASH, availableCash.getYearMonthOfDatum(), availableCash.getBetrag());
+        }
     }
 
     private void calculateStocks(Collection<SharedHeld> sharedHelds, Collection<StockPrice> stockPrices) {
@@ -62,8 +73,7 @@ public class Calculator {
     private void addCalculation(ECalculationType calculationType, YearMonth yearMonth, Double value) {
         calculations.putIfAbsent(calculationType, new Categorie<>(calculationType));
         Categorie<ECalculationType> calculation = calculations.get(calculationType);
-        double roundedValue = Math.floor(value * 100) / 100;
-        calculation.addValue(yearMonth, roundedValue);
+        calculation.addValue(yearMonth, value);
     }
 
     // Monatlicher Überschuss = Einnahemen - Ausgaben - Sparrate

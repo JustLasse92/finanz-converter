@@ -22,7 +22,7 @@ public class TransactionHelper {
         }
 
         Categorie categorie = new Categorie(categoryTypeList.getFirst());
-        YearMonth month = transaction.getMonthOfBuchungsdatum();
+        YearMonth month = transaction.getYearMonthOfBuchungsdatum();
         categorie.addValue(month, transaction.getBetrag());
         return categorie;
     }
