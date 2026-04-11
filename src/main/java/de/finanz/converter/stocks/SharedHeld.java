@@ -6,6 +6,7 @@ import com.opencsv.bean.CsvNumber;
 import lombok.Data;
 
 import java.time.Month;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -36,7 +37,8 @@ public class SharedHeld {
                 '}';
     }
 
-    public Month getMonth() {
-        return Month.of(getDatum().get(Calendar.MONTH) + 1);
+    public YearMonth getYearMonth() {
+        return YearMonth.of(getDatum().get(Calendar.YEAR),
+                Month.of(getDatum().get(Calendar.MONTH) + 1));
     }
 }

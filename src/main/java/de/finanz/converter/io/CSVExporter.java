@@ -9,7 +9,7 @@ import de.finanz.converter.kategorie.ESuperCategoryType;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.Month;
+import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,13 +29,13 @@ public class CSVExporter {
         );
 
         // Header
-        List<Month> gesetzteMonate = bilanz.getMonthsSorted();
+        List<YearMonth> gesetzteMonate = bilanz.getYearMonthsSorted();
         String[] header = new String[gesetzteMonate.size() + 1];
         header[0] = "Kategorie";
 
         int i = 1;
-        for (Month m : gesetzteMonate) {
-            header[i++] = m.getDisplayName(TextStyle.FULL, Locale.GERMAN); // JANUARY, FEBRUARY, ...
+        for (YearMonth yearMonth : gesetzteMonate) {
+            header[i++] = yearMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.GERMAN); // JANUARY, FEBRUARY, ...
         }
 
         writer.writeNext(header);
@@ -52,10 +52,10 @@ public class CSVExporter {
             for (ECategoryType categoryType : categoryTypes) {
                 List<String> rows = new ArrayList<>();
                 rows.add(categoryType.getName());
-                for (Month month : gesetzteMonate) {
+                for (YearMonth yearMonth : gesetzteMonate) {
                     // TODO wenn in keinem Monat ein Wert dazu eingetragen wurde, soll die Zeile gar nicht
                     //  geschrieben werden
-                    rows.add(bilanz.getCategoryValue(categoryType, month) + " €");
+                    rows.add(bilanz.getCategoryValue(categoryType, yearMonth) + " €");
                 }
 
                 writer.writeNext(rows.toArray(String[]::new));
@@ -67,8 +67,8 @@ public class CSVExporter {
         for (ECalculationType calculationType : ECalculationType.values()) {
             List<String> rows = new ArrayList<>();
             rows.add(calculationType.getName());
-            for (Month month : gesetzteMonate) {
-                rows.add(calculator.getCalculationValue(calculationType, month) + " €");
+            for (YearMonth yearMonth : gesetzteMonate) {
+                rows.add(calculator.getCalculationValue(calculationType, yearMonth) + " €");
             }
 
             writer.writeNext(rows.toArray(String[]::new));

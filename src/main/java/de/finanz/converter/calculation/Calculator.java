@@ -8,7 +8,6 @@ import de.finanz.converter.kategorie.ESuperCategoryType;
 import de.finanz.converter.stocks.SharedHeld;
 import de.finanz.converter.stocks.StockPrice;
 
-import java.time.Month;
 import java.time.YearMonth;
 import java.util.Collection;
 import java.util.HashMap;
@@ -16,42 +15,28 @@ import java.util.List;
 import java.util.Map;
 
 public class Calculator {
-    // DONE
-//     - Gesamte Einnahmen
-//    - Fixe Ausgaben
-//    - Variable Ausgaben
-//    - Gesamte Ausgaben
-//    - Monatlicher Überschuss
-//    - Komplette Sparrate
-//    - Aktien
-//    - Bitcoin
-
-    // NOCH ZU IMPLEMENTIEREN
-//    - Bilanz (Wieviel Kapital ist am Ende des Monats da? Cash + Aktien + Bitcoin)
-//    - Cash wird nicht berechnet, sondern nur angegeben
-//    - Differenz zwischen berechneter Bilanz und tatsächlicher Bilanz
-
-    private Map<ECalculationType, Calculation> calculations;
+    private Map<ECalculationType, Categorie<ECalculationType>> calculations;
 
 
     public Calculator(Bilanz bilanz) {
         calculations = new HashMap<>();
-        Collection<Categorie> categories = bilanz.getAllCategories();
+        Collection<Categorie<ECategoryType>> categories = bilanz.getAllCategories();
         List<StockPrice> stockPrices = bilanz.getStockPrices();
         List<SharedHeld> sharedHelds = bilanz.getSharedHelds();
-        calculateEinnahmenGesamt(categories);
-        calculateAusgabenFix(categories);
-        calculateAusgabenVariabel(categories);
-        calculateAusgabenGesamt();
-        calculateMonatlicherUeberschuss(categories);
-        calculateSparrateGesamt(categories);
+        List<YearMonth> yearMonthsSorted = bilanz.getYearMonthsSorted();
+        calculateEinnahmenGesamt(categories, yearMonthsSorted);
+        calculateAusgabenFix(categories, yearMonthsSorted);
+        calculateAusgabenVariabel(categories, yearMonthsSorted);
+        calculateAusgabenGesamt(yearMonthsSorted);
+        calculateMonatlicherUeberschuss(categories, yearMonthsSorted);
+        calculateSparrateGesamt(categories, yearMonthsSorted);
         calculateStocks(sharedHelds, stockPrices);
-        calculateMonatlicheBilanz();
+        calculateMonatlicheBilanz(yearMonthsSorted);
     }
 
-    public Double getCalculationValue(ECalculationType calculationType, Month month) {
+    public Double getCalculationValue(ECalculationType calculationType, YearMonth yearMonth) {
         if (calculations.containsKey(calculationType)) {
-            return calculations.get(calculationType).getValue(month);
+            return calculations.get(calculationType).getValue(yearMonth);
         }
         return 0.0;
     }
@@ -70,102 +55,94 @@ public class Calculator {
             Double gehalteneAnteile = sharedHeld.getGehalteneAnteile();
             Double kurs = stockPricesZumSharedHeld.getFirst().getKurs();
             Double stockValue = gehalteneAnteile * kurs;
-            addCalculation(ECalculationType.findByName(sharedHeld.getName()), sharedHeld.getMonth(), stockValue);
+            addCalculation(ECalculationType.findByName(sharedHeld.getName()), sharedHeld.getYearMonth(), stockValue);
         }
     }
 
-    private void addCalculation(ECalculationType calculationType, Month month, Double value) {
-        calculations.putIfAbsent(calculationType, new Calculation(calculationType));
-        Calculation calculation = calculations.get(calculationType);
+    private void addCalculation(ECalculationType calculationType, YearMonth yearMonth, Double value) {
+        calculations.putIfAbsent(calculationType, new Categorie<>(calculationType));
+        Categorie<ECalculationType> calculation = calculations.get(calculationType);
         double roundedValue = Math.floor(value * 100) / 100;
-        calculation.addValue(month, roundedValue);
+        calculation.addValue(yearMonth, roundedValue);
     }
 
     // Monatlicher Überschuss = Einnahemen - Ausgaben - Sparrate
-    private void calculateMonatlicherUeberschuss(Collection<Categorie> categories) {
-        for (Month month : Month.values()) {
-            double monatlicherUeberschuss = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, month)
-                    + getCalculationValue(ECalculationType.AUSGABEN_GESAMT, month)
-                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), month);
-            addCalculation(ECalculationType.UEBERSCHUSS_MONAT, month, monatlicherUeberschuss);
+    private void calculateMonatlicherUeberschuss(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double monatlicherUeberschuss = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth)
+                    + getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth)
+                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
+            addCalculation(ECalculationType.UEBERSCHUSS_MONAT, yearMonth, monatlicherUeberschuss);
         }
     }
 
-    private void calculateAusgabenGesamt() {
-        for (Month month : Month.values()) {
-            double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_FIX, month)
-                    + getCalculationValue(ECalculationType.AUSGABEN_VARIABEL, month);
-            addCalculation(ECalculationType.AUSGABEN_GESAMT, month, ausgabenGesamt);
+    private void calculateAusgabenGesamt(List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_FIX, yearMonth)
+                    + getCalculationValue(ECalculationType.AUSGABEN_VARIABEL, yearMonth);
+            addCalculation(ECalculationType.AUSGABEN_GESAMT, yearMonth, ausgabenGesamt);
         }
     }
 
-    private void calculateMonatlicheBilanz() {
-        for (Month month : Month.values()) {
-            double bilanz = getCalculationValue(ECalculationType.CASH, month)
-                    + getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, month)
-                    + getCalculationValue(ECalculationType.ISHARES_NASDAQ_100, month)
-                    + getCalculationValue(ECalculationType.BITCOIN, month);
-            addCalculation(ECalculationType.BILANZ_MONAT, month, bilanz);
+    private void calculateMonatlicheBilanz(List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double bilanz = getCalculationValue(ECalculationType.CASH, yearMonth)
+                    + getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, yearMonth)
+                    + getCalculationValue(ECalculationType.ISHARES_NASDAQ_100, yearMonth)
+                    + getCalculationValue(ECalculationType.BITCOIN, yearMonth);
+            addCalculation(ECalculationType.BILANZ_MONAT, yearMonth, bilanz);
         }
     }
 
     // (Monatliche Sparrate + Monatlicher Überschuss)
-    private void calculateSparrateGesamt(Collection<Categorie> categories) {
-        for (Month month : Month.values()) {
-            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), month);
+    private void calculateSparrateGesamt(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
             // Sparrate ist negativ angegeben. Hier wird der postive Wert gebraucht
             sparrate *= -1;
-            Double ueberschussMonat = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, month);
+            Double ueberschussMonat = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             double sparrateGesamt = sparrate + ueberschussMonat;
-            addCalculation(ECalculationType.SPARRATE_GESAMT, month, sparrateGesamt);
+            addCalculation(ECalculationType.SPARRATE_GESAMT, yearMonth, sparrateGesamt);
         }
     }
 
-    private void calculateAusgabenVariabel(Collection<Categorie> categories) {
-        for (Month month : Month.values()) {
+    private void calculateAusgabenVariabel(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
             double sumValues = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.LEBENSHALTUNG, ESuperCategoryType.AUTO_TANKEN,
-                    ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE), month);
-            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), month);
+                    ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE), yearMonth);
+            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
             double value = sumValues - sparrate;
-            addCalculation(ECalculationType.AUSGABEN_VARIABEL, month, value);
+            addCalculation(ECalculationType.AUSGABEN_VARIABEL, yearMonth, value);
         }
 
     }
 
-    private void calculateAusgabenFix(Collection<Categorie> categories) {
-        for (Month month : Month.values()) {
+    private void calculateAusgabenFix(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
             double value = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.WOHNEN,
-                    ESuperCategoryType.SONSTIGE_VERTRAEGE, ESuperCategoryType.VERSICHERUNGEN), month);
-            addCalculation(ECalculationType.AUSGABEN_FIX, month, value);
+                    ESuperCategoryType.SONSTIGE_VERTRAEGE, ESuperCategoryType.VERSICHERUNGEN), yearMonth);
+            addCalculation(ECalculationType.AUSGABEN_FIX, yearMonth, value);
         }
     }
 
-    private void calculateEinnahmenGesamt(Collection<Categorie> categories) {
-        for (YearMonth yearMonth : getYearMonths(categories)) {
+    private void calculateEinnahmenGesamt(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
             double value = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.EINKOMMEN), yearMonth);
             addCalculation(ECalculationType.EINNAMEN_GESAMT, yearMonth, value);
         }
     }
 
-    private Collection<YearMonth> getYearMonths(Collection<Categorie> categories) {
-        return categories.stream()
-                .map(categorie -> categorie.getValues().keySet())
-                .flatMap(Collection::stream)
-                .distinct()
-                .toList();
-    }
-
-    private double sumValuesOfSuperCategoryTypes(Collection<Categorie> categories,
+    private double sumValuesOfSuperCategoryTypes(Collection<Categorie<ECategoryType>> categories,
                                                  Collection<ESuperCategoryType> superCategoryTypes, YearMonth yearMonth) {
         return sumValuesOfAllTypes(categories, superCategoryTypes, List.of(), yearMonth);
     }
 
-    private double sumValuesOfCategoryTypes(Collection<Categorie> categories, Collection<ECategoryType> categoryTypes
+    private double sumValuesOfCategoryTypes(Collection<Categorie<ECategoryType>> categories, Collection<ECategoryType> categoryTypes
             , YearMonth yearMonth) {
         return sumValuesOfAllTypes(categories, List.of(), categoryTypes, yearMonth);
     }
 
-    private double sumValuesOfAllTypes(Collection<Categorie> categories,
+    private double sumValuesOfAllTypes(Collection<Categorie<ECategoryType>> categories,
                                        Collection<ESuperCategoryType> superCategoryTypes,
                                        Collection<ECategoryType> categoryTypes, YearMonth yearMonth) {
         return categories.stream()

@@ -11,7 +11,7 @@ import de.finanz.converter.transaction.TransactionHelper;
 import lombok.Getter;
 
 import java.io.IOException;
-import java.time.Month;
+import java.time.YearMonth;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 
 @Getter
 public class Bilanz {
-    private List<SharedHeld> sharedHelds;
-    private List<StockPrice> stockPrices;
-    private List<Transaction> transactions;
-    private List<AvailableCash> availableCashes;
-    private Map<ECategoryType, Categorie> categories;
+    private final List<SharedHeld> sharedHelds;
+    private final List<StockPrice> stockPrices;
+    private final List<Transaction> transactions;
+    private final List<AvailableCash> availableCashes;
+    private final Map<ECategoryType, Categorie<ECategoryType>> categories;
 
     public Bilanz() throws IOException {
         CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
@@ -40,28 +40,28 @@ public class Bilanz {
                 .forEach(this::addCategoryValues);
     }
 
-    public void addCategoryValues(Categorie k) {
-        Categorie currentCategorie = getCategory(k.getType());
+    public void addCategoryValues(Categorie<ECategoryType> k) {
+        Categorie<ECategoryType> currentCategorie = getCategory(k.getType());
         k.getValues().forEach((currentCategorie::addValue));
         categories.put(currentCategorie.getType(), currentCategorie);
     }
 
-    public Collection<Categorie> getAllCategories() {
+    public Collection<Categorie<ECategoryType>> getAllCategories() {
         return categories.values();
     }
 
-    public Categorie getCategory(ECategoryType eCategoryType) {
-        return categories.getOrDefault(eCategoryType, new Categorie(eCategoryType));
+    public Categorie<ECategoryType> getCategory(ECategoryType eCategoryType) {
+        return categories.getOrDefault(eCategoryType, new Categorie<>(eCategoryType));
     }
 
-    public Double getCategoryValue(ECategoryType categoryType, Month month) {
+    public Double getCategoryValue(ECategoryType categoryType, YearMonth yearMonth) {
         if (categories.containsKey(categoryType)) {
-            return categories.get(categoryType).getValue(month);
+            return categories.get(categoryType).getValue(yearMonth);
         }
         return 0d;
     }
 
-    public List<Month> getMonthsSorted() {
+    public List<YearMonth> getYearMonthsSorted() {
         return getCategories().values()
                 .stream()
                 .map(k -> k.getValues().keySet())
