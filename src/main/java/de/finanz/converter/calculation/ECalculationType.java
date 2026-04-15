@@ -20,6 +20,7 @@ public enum ECalculationType {
     VANGUARD_FTSE_ALL_WORLD("Vanguard FTSE All-World"),
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
     BITCOIN("Bitcoin"),
+    GIROKONTO_IST("Girokonto Ist"),
     DIFFERENZ("Differenz");
     private String name;
 

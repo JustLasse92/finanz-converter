@@ -8,18 +8,21 @@ import java.util.Calendar;
 
 public class TransactionCategoryMatcher {
 
-    public static boolean containsSender(Transaction transaction, String sender) {
-        return transaction.getSender().toLowerCase().contains(sender.toLowerCase());
+    public static boolean containsSender(Transaction transaction, String... sender) {
+        String transactionSender = transaction.getSender().toLowerCase();
+        return Arrays.stream(sender)
+                .map(String::toLowerCase)
+                .anyMatch(transactionSender::contains);
     }
 
-    public static boolean containsOneVerwendungszweck(Transaction transaction, String... verwendungszwecke) {
+    public static boolean containsAnyVerwendungszweck(Transaction transaction, String... verwendungszwecke) {
         String transactionVerwendungszweck = transaction.getVerwendungszweck().toLowerCase();
         return Arrays.stream(verwendungszwecke)
                 .map(String::toLowerCase)
                 .anyMatch(transactionVerwendungszweck::contains);
     }
 
-    public static boolean containsOneEmpfaenger(Transaction transaction, String... empfaenger) {
+    public static boolean containsAnyEmpfaenger(Transaction transaction, String... empfaenger) {
         String transactionEmpfaenger = transaction.getEmpfaenger().toLowerCase();
         return Arrays.stream(empfaenger)
                 .map(String::toLowerCase)

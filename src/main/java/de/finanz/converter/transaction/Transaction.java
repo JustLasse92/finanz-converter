@@ -31,7 +31,7 @@ public class Transaction {
     @CsvBindByName(column = "Zahlungsempfänger*in")
     private String empfaenger;
 
-    @CsvCustomBindByName(column = "Verwendungszweck", converter = EmptyToNullConverter.class)
+    @CsvBindByName(column = "Verwendungszweck")
     private String verwendungszweck;
 
     @CsvCustomBindByName(column = "Status", converter = EmptyToNullConverter.class)
@@ -52,7 +52,7 @@ public class Transaction {
     @CsvBindByName(column = "Umsatztyp")
     private EUmsatztyp umsatztyp;
 
-    @CsvBindByName(column = "Betrag (€)")
+    @CsvBindByName(column = "Betrag (€)", required = true)
     @CsvNumber(value = "#.##")
     private Double betrag;
 

@@ -1,6 +1,8 @@
 package de.finanz.converter.io;
 
+import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.exceptions.CsvException;
 import de.finanz.converter.cash.AvailableCash;
 import de.finanz.converter.stocks.SharedHeld;
 import de.finanz.converter.stocks.StockPrice;
@@ -8,6 +10,7 @@ import de.finanz.converter.transaction.Transaction;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.input.BOMInputStream;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +31,19 @@ public class CSVFinanzReader {
     private static Path STOCK_PRICE_PATH = Path.of(System.getenv("STOCK_PRICE_PATH"));
     private static Path SHARED_HELD_PATH = Path.of(System.getenv("SHARED_HELD_PATH"));
     private static Path AVAILABLE_CASH_PATH = Path.of(System.getenv("AVAILABLE_CASH_PATH"));
+    private static Path TRANSACTIONS_SINGLE_2023_PATH = Path.of(System.getenv("TRANSACTIONS_SINGLE_2023_PATH"));
+
+    public double readSummeUmsaetze2023() throws IOException {
+        try (CSVReader reader = new CSVReader(new FileReader(TRANSACTIONS_SINGLE_2023_PATH.toFile()))) {
+            List<String[]> rows = reader.readAll();
+            return rows.stream()
+                    .map(row -> row[0])
+                    .mapToDouble(Double::parseDouble)
+                    .sum();
+        } catch (CsvException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public List<AvailableCash> readAvailableCash() throws IOException {
         return readCSV(AVAILABLE_CASH_PATH, AvailableCash.class);

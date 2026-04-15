@@ -2,15 +2,18 @@ package de.finanz.converter.calculation;
 
 import de.finanz.converter.bilanz.Bilanz;
 import de.finanz.converter.cash.AvailableCash;
+import de.finanz.converter.categorie.Categorie;
+import de.finanz.converter.categorie.ECategoryType;
+import de.finanz.converter.categorie.ESuperCategoryType;
 import de.finanz.converter.exception.FinanzConverterException;
-import de.finanz.converter.kategorie.Categorie;
-import de.finanz.converter.kategorie.ECategoryType;
-import de.finanz.converter.kategorie.ESuperCategoryType;
 import de.finanz.converter.stocks.SharedHeld;
 import de.finanz.converter.stocks.StockPrice;
+import de.finanz.converter.transaction.Transaction;
 
+import java.time.Month;
 import java.time.YearMonth;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,7 @@ public class Calculator {
         List<SharedHeld> sharedHelds = bilanz.getSharedHelds();
         List<YearMonth> yearMonthsSorted = bilanz.getYearMonthsSorted();
         List<AvailableCash> availableCashes = bilanz.getAvailableCashes();
+        List<Transaction> allTransactions = bilanz.getAllTransactions();
 
         calculateEinnahmenGesamt(categories, yearMonthsSorted);
         calculateAusgabenFix(categories, yearMonthsSorted);
@@ -37,13 +41,53 @@ public class Calculator {
         calculateStocks(sharedHelds, stockPrices);
         calculateMonatlicheBilanz(yearMonthsSorted);
         calculateCash(availableCashes);
+        calculateGirokonto(allTransactions, bilanz.getUmsatz2023());
     }
+
 
     public Double getCalculationValue(ECalculationType calculationType, YearMonth yearMonth) {
         if (calculations.containsKey(calculationType)) {
             return calculations.get(calculationType).getValue(yearMonth);
         }
         return 0.0;
+    }
+
+    private Double getCalculationValueSumAllYearMonths(ECalculationType calculationType) {
+        if (calculations.containsKey(calculationType)) {
+            return calculations.get(calculationType)
+                    .getValues()
+                    .values()
+                    .stream()
+                    .mapToDouble(d -> d)
+                    .sum();
+        }
+        return 0.0;
+    }
+
+
+    private void calculateGirokonto(List<Transaction> allTransactions, final double umsatz2023) {
+        // nur für das aktuelle Jahr sollen die Bilanzen des Girokontos abgebildet werden
+        YearMonth latestYearOfTransaction = allTransactions.stream()
+                .max(Comparator.comparing(Transaction::getYearMonthOfBuchungsdatum))
+                .orElseThrow()
+                .getYearMonthOfBuchungsdatum();
+        latestYearOfTransaction = latestYearOfTransaction.plusMonths(1);
+
+
+        // kann man effizienter gestalten, sodass nicht für den Monat alle Transaktion erneut summiert werden müssen,
+        // aber es ist effizient genug
+        do {
+            YearMonth finalLatestYearOfTransaction = latestYearOfTransaction;
+            double summe = allTransactions.stream()
+                    .filter(t -> !t.getYearMonthOfBuchungsdatum().isAfter(finalLatestYearOfTransaction))
+                    .map(Transaction::getBetrag)
+                    .mapToDouble(d -> d)
+                    .sum();
+            summe += umsatz2023;
+            addCalculation(ECalculationType.GIROKONTO_IST, latestYearOfTransaction, summe);
+            latestYearOfTransaction = latestYearOfTransaction.minusMonths(1);
+        } while (!latestYearOfTransaction.getMonth().equals(Month.DECEMBER));
+
     }
 
     private void calculateCash(List<AvailableCash> availableCashes) {
@@ -118,7 +162,7 @@ public class Calculator {
 
     private void calculateAusgabenVariabel(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double sumValues = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.LEBENSHALTUNG, ESuperCategoryType.AUTO_TANKEN,
+            double sumValues = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.LEBENSHALTUNG, ESuperCategoryType.MOBILITAET,
                     ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE), yearMonth);
             double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
             double value = sumValues - sparrate;

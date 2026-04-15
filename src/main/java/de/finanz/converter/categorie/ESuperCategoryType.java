@@ -1,4 +1,4 @@
-package de.finanz.converter.kategorie;
+package de.finanz.converter.categorie;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,8 @@ public enum ESuperCategoryType {
     VERSICHERUNGEN("Versicherungen"),
     SONSTIGE_VERTRAEGE("Sonstige Verträge"),
     LEBENSHALTUNG("Lebenshaltung"),
-    AUTO_TANKEN("Auto und Tanken"),
+    MOBILITAET("Mobilität"),
+    ARBEIT_STUDIUM("Arbeit und Studium"),
     ENTERTAINMENT("Entertainment"),
     SONSTIGE("Sonstige");
 

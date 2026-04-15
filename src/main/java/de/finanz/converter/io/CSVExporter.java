@@ -5,8 +5,9 @@ import de.finanz.converter.bilanz.Bilanz;
 import de.finanz.converter.calculation.Calculator;
 import de.finanz.converter.calculation.ECalculationType;
 import de.finanz.converter.cash.AvailableCash;
-import de.finanz.converter.kategorie.ECategoryType;
-import de.finanz.converter.kategorie.ESuperCategoryType;
+import de.finanz.converter.cash.EAvailableCashTyp;
+import de.finanz.converter.categorie.ECategoryType;
+import de.finanz.converter.categorie.ESuperCategoryType;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class CSVExporter {
 
@@ -23,8 +25,8 @@ public class CSVExporter {
 
         CSVWriter writer = new CSVWriter(
                 new FileWriter(outputFileName),
-                ';',
-                CSVWriter.NO_QUOTE_CHARACTER,
+                CSVWriter.DEFAULT_SEPARATOR,
+                CSVWriter.DEFAULT_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END
         );
@@ -56,7 +58,8 @@ public class CSVExporter {
                 for (YearMonth yearMonth : gesetzteYearMonths) {
                     // TODO wenn in keinem Monat ein Wert dazu eingetragen wurde, soll die Zeile gar nicht
                     //  geschrieben werden
-                    rows.add(String.format("%.2f", bilanz.getCategoryValue(categoryType, yearMonth)) + " €");
+                    Double value = bilanz.getCategoryValue(categoryType, yearMonth);
+                    rows.add(String.format("%.2f", value) + " €");
                 }
 
                 writer.writeNext(rows.toArray(String[]::new));
@@ -76,10 +79,13 @@ public class CSVExporter {
         }
         writer.writeNext(new String[0]); //Leerzeile
 
-        for (AvailableCash availableCash : bilanz.getAvailableCashesInYearMonths()) {
+        for (EAvailableCashTyp availableCashTyp : EAvailableCashTyp.values()) {
             List<String> rows = new ArrayList<>();
-            rows.add(availableCash.getTyp().getBezeichnung());
-            rows.add(String.format("%.2f", availableCash.getBetrag()) + " €");
+            rows.add(availableCashTyp.getBezeichnung());
+            for (YearMonth yearMonth : gesetzteYearMonths) {
+                Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
+                availableCashOptional.ifPresent(availableCash -> rows.add(String.format("%.2f", availableCash.getBetrag()) + " €"));
+            }
             writer.writeNext(rows.toArray(String[]::new));
         }
 

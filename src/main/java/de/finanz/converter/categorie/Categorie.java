@@ -1,4 +1,4 @@
-package de.finanz.converter.kategorie;
+package de.finanz.converter.categorie;
 
 import lombok.Getter;
 
