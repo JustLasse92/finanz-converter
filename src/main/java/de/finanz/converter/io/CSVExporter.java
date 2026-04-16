@@ -80,6 +80,10 @@ public class CSVExporter {
         writer.writeNext(new String[0]); //Leerzeile
 
         for (EAvailableCashTyp availableCashTyp : EAvailableCashTyp.values()) {
+            //TODO prüfen ob der CashTyp benötigt wird. Wenn ja -> refactoring
+            if (availableCashTyp.equals(EAvailableCashTyp.GIROKONTO)) {
+                continue;
+            }
             List<String> rows = new ArrayList<>();
             rows.add(availableCashTyp.getBezeichnung());
             for (YearMonth yearMonth : gesetzteYearMonths) {

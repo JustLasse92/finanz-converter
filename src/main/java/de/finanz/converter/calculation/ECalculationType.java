@@ -21,7 +21,7 @@ public enum ECalculationType {
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
     BITCOIN("Bitcoin"),
     GIROKONTO_IST("Girokonto Ist"),
-    DIFFERENZ("Differenz");
+    GIROKONTO_DIFFERENZ("Girokonto Differenz");
     private String name;
 
     public static ECalculationType findByName(String name) {

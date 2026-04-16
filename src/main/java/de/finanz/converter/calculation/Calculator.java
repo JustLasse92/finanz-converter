@@ -42,6 +42,7 @@ public class Calculator {
         calculateMonatlicheBilanz(yearMonthsSorted);
         calculateCash(availableCashes);
         calculateGirokonto(allTransactions, bilanz.getUmsatz2023());
+        calculateGirokontoDifferenz(bilanz.getUmsatz2023());
     }
 
 
@@ -64,6 +65,20 @@ public class Calculator {
         return 0.0;
     }
 
+    private void calculateGirokontoDifferenz(double umsatz2023) {
+        // TODO die Differenz zum IST Stand für die Monate berechnen
+        Categorie<ECalculationType> girokontoIst = calculations.get(ECalculationType.GIROKONTO_IST);
+        Map<YearMonth, Double> values = girokontoIst.getValues();
+        values.forEach((yearMonth, girokontoIstValue) -> {
+            Double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth);
+            Double einnahmenGesamt = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth);
+            Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
+//            Double calcGesamt = umsatz2023 + ausgabenGesamt + einnahmenGesamt;
+            Double calcGesamt = umsatz2023 + monatlicherUeberschuss;
+            Double diff = girokontoIstValue - calcGesamt;
+            addCalculation(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth, diff);
+        });
+    }
 
     private void calculateGirokonto(List<Transaction> allTransactions, final double umsatz2023) {
         // nur für das aktuelle Jahr sollen die Bilanzen des Girokontos abgebildet werden
