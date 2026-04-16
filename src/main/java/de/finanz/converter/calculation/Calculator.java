@@ -13,7 +13,6 @@ import de.finanz.converter.transaction.Transaction;
 import java.time.Month;
 import java.time.YearMonth;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +40,8 @@ public class Calculator {
         calculateStocks(sharedHelds, stockPrices);
         calculateMonatlicheBilanz(yearMonthsSorted);
         calculateCash(availableCashes);
-        calculateGirokonto(allTransactions, bilanz.getUmsatz2023());
-        calculateGirokontoDifferenz(bilanz.getUmsatz2023());
+        calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
+        calculateGirokontoDifferenz();
     }
 
 
@@ -69,40 +68,40 @@ public class Calculator {
         // TODO die Differenz zum IST Stand für die Monate berechnen
         Categorie<ECalculationType> girokontoIst = calculations.get(ECalculationType.GIROKONTO_IST);
         Map<YearMonth, Double> values = girokontoIst.getValues();
-        values.forEach((yearMonth, girokontoIstValue) -> {
-            Double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth);
-            Double einnahmenGesamt = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth);
+        values.forEach((yearMonth, girokontoIstBetrag) -> {
+//            Double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth);
+//            Double einnahmenGesamt = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth);
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
-//            Double calcGesamt = umsatz2023 + ausgabenGesamt + einnahmenGesamt;
-            Double calcGesamt = umsatz2023 + monatlicherUeberschuss;
-            Double diff = girokontoIstValue - calcGesamt;
+            Double girokontoIstBetragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
+            Double calcGesamt = girokontoIstBetragVormonat + monatlicherUeberschuss;
+            Double diff = girokontoIstBetrag - calcGesamt;
             addCalculation(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth, diff);
         });
     }
 
-    private void calculateGirokonto(List<Transaction> allTransactions, final double umsatz2023) {
-        // nur für das aktuelle Jahr sollen die Bilanzen des Girokontos abgebildet werden
-        YearMonth latestYearOfTransaction = allTransactions.stream()
-                .max(Comparator.comparing(Transaction::getYearMonthOfBuchungsdatum))
-                .orElseThrow()
-                .getYearMonthOfBuchungsdatum();
-        latestYearOfTransaction = latestYearOfTransaction.plusMonths(1);
+    private void calculateGirokontoIst(List<Transaction> allTransactions, final Double umsatz2023) {
+        addCalculation(ECalculationType.GIROKONTO_IST, YearMonth.of(2023, Month.DECEMBER), umsatz2023);
 
+        List<YearMonth> allYearMonths = allTransactions.stream()
+                .map(Transaction::getYearMonthOfBuchungsdatum)
+                .sorted()
+                .distinct()
+                .toList();
 
-        // kann man effizienter gestalten, sodass nicht für den Monat alle Transaktion erneut summiert werden müssen,
-        // aber es ist effizient genug
-        do {
-            YearMonth finalLatestYearOfTransaction = latestYearOfTransaction;
-            double summe = allTransactions.stream()
-                    .filter(t -> !t.getYearMonthOfBuchungsdatum().isAfter(finalLatestYearOfTransaction))
-                    .map(Transaction::getBetrag)
-                    .mapToDouble(d -> d)
-                    .sum();
-            summe += umsatz2023;
-            addCalculation(ECalculationType.GIROKONTO_IST, latestYearOfTransaction, summe);
-            latestYearOfTransaction = latestYearOfTransaction.minusMonths(1);
-        } while (!latestYearOfTransaction.getMonth().equals(Month.DECEMBER));
+        for (YearMonth yearMonth : allYearMonths) {
+            Double sumTransactionsInYearMonth = sumAllTransactionsInYearMonth(allTransactions, yearMonth);
+            Double betragVorher = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
+            Double girokontoIstBetrag = sumTransactionsInYearMonth +  betragVorher;
+            addCalculation(ECalculationType.GIROKONTO_IST, yearMonth, girokontoIstBetrag);
+        }
+    }
 
+    private Double sumAllTransactionsInYearMonth(List<Transaction> transactions, YearMonth yearMonth){
+        return transactions.stream()
+                .filter(t -> t.getYearMonthOfBuchungsdatum().equals(yearMonth))
+                .map(Transaction::getBetrag)
+                .mapToDouble(d -> d)
+                .sum();
     }
 
     private void calculateCash(List<AvailableCash> availableCashes) {
