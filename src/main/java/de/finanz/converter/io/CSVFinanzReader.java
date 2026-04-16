@@ -25,13 +25,17 @@ import java.util.stream.Stream;
 @AllArgsConstructor
 public class CSVFinanzReader {
 
-    private static Path TRANSACTIONS_PATH = Path.of(System.getenv("TRANSACTIONS_PATH"));
-    private static Path TRANSACTIONS_ADDITIONAL_PATH = Path.of(System.getenv("TRANSACTIONS_ADDITIONAL_PATH"));
-    private static Path TRANSACTIONS_EXCLUDED_PATH = Path.of(System.getenv("TRANSACTIONS_EXCLUDED_PATH"));
-    private static Path STOCK_PRICE_PATH = Path.of(System.getenv("STOCK_PRICE_PATH"));
-    private static Path SHARED_HELD_PATH = Path.of(System.getenv("SHARED_HELD_PATH"));
-    private static Path AVAILABLE_CASH_PATH = Path.of(System.getenv("AVAILABLE_CASH_PATH"));
-    private static Path TRANSACTIONS_SINGLE_2023_PATH = Path.of(System.getenv("TRANSACTIONS_SINGLE_2023_PATH"));
+    private static final Path TRANSACTIONS_ROOT_PATH = Path.of(System.getenv("TRANSACTIONS_ROOT_PATH"));
+    private static final Path STOCK_PRICE_PATH = resolvePath("STOCK_PRICE_FILE_PATH");
+    private static final Path TRANSACTIONS_ADDITIONAL_PATH = resolvePath("TRANSACTIONS_ADDITIONAL_FILE_PATH");
+    private static final Path TRANSACTIONS_EXCLUDED_PATH = resolvePath("TRANSACTIONS_EXCLUDED_FILE_PATH");
+    private static final Path SHARED_HELD_PATH = resolvePath("SHARED_HELD_FILE_PATH");
+    private static final Path AVAILABLE_CASH_PATH = resolvePath("AVAILABLE_CASH_FILE_PATH");
+    private static final Path TRANSACTIONS_SINGLE_2023_PATH = resolvePath("TRANSACTIONS_SINGLE_2023_FILE_PATH");
+
+    private static Path resolvePath(String env){
+        return TRANSACTIONS_ROOT_PATH.resolve(Path.of(System.getenv(env)));
+    }
 
     public double readSummeUmsaetze2023() throws IOException {
         try (CSVReader reader = new CSVReader(new FileReader(TRANSACTIONS_SINGLE_2023_PATH.toFile()))) {
@@ -50,7 +54,7 @@ public class CSVFinanzReader {
     }
 
     public List<Transaction> readTransactions() throws IOException {
-        return readCSV(TRANSACTIONS_PATH, Transaction.class);
+        return readCSV(TRANSACTIONS_ROOT_PATH, Transaction.class);
     }
 
     public List<Transaction> readExcludedTransactions() throws IOException {
