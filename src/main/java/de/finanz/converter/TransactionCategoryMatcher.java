@@ -8,7 +8,7 @@ import java.util.Calendar;
 
 public class TransactionCategoryMatcher {
 
-    public static boolean containsSender(Transaction transaction, String... sender) {
+    public static boolean containsAnySender(Transaction transaction, String... sender) {
         String transactionSender = transaction.getSender().toLowerCase();
         return Arrays.stream(sender)
                 .map(String::toLowerCase)

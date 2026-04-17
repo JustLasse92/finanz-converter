@@ -41,7 +41,8 @@ public class Calculator {
         calculateMonatlicheBilanz(yearMonthsSorted);
         calculateCash(availableCashes);
         calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
-        calculateGirokontoDifferenz();
+        calculateGirokontoDifferenz(categories);
+        calculateAuslagen(categories, yearMonthsSorted);
     }
 
 
@@ -52,13 +53,28 @@ public class Calculator {
         return 0.0;
     }
 
-    private void calculateGirokontoDifferenz() {
+    private void calculateAuslagen(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double auslagenAusgangGesamt = sumValuesOfCategoryTypes(categories,
+                    List.of(ECategoryType.AUSLAGEN_AUSGANG), yearMonth);
+            double auslagenEingangGesamt = sumValuesOfCategoryTypes(categories,
+                    List.of(ECategoryType.AUSLAGEN_EINGANG), yearMonth);
+            addCalculation(ECalculationType.AUSLAGEN_AUSGANG_GESAMT, yearMonth, auslagenAusgangGesamt);
+            addCalculation(ECalculationType.AUSLAGEN_EINGANG_GESAMT, yearMonth, auslagenEingangGesamt);
+        }
+    }
+
+    private void calculateGirokontoDifferenz(Collection<Categorie<ECategoryType>> categories) {
         Categorie<ECalculationType> girokontoIst = calculations.get(ECalculationType.GIROKONTO_IST);
         Map<YearMonth, Double> values = girokontoIst.getValues();
         values.forEach((yearMonth, girokontoIstBetrag) -> {
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             Double girokontoIstBetragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
-            Double calcGesamt = girokontoIstBetragVormonat + monatlicherUeberschuss;
+            double transferTagesgeldGesamt = categories.stream()
+                    .filter(categorie -> categorie.getType().equals(ECategoryType.TAGESGELDKONTO_TRANSFER))
+                    .mapToDouble(categorie -> categorie.getValue(yearMonth))
+                    .sum();
+            Double calcGesamt = girokontoIstBetragVormonat + monatlicherUeberschuss + transferTagesgeldGesamt;
             Double diff = girokontoIstBetrag - calcGesamt;
             addCalculation(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth, diff);
         });
@@ -162,7 +178,7 @@ public class Calculator {
     private void calculateAusgabenVariabel(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double sumValues = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.LEBENSHALTUNG, ESuperCategoryType.MOBILITAET,
-                    ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE), yearMonth);
+                    ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE, ESuperCategoryType.AUSLAGEN), yearMonth);
             double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
             double value = sumValues - sparrate;
             addCalculation(ECalculationType.AUSGABEN_VARIABEL, yearMonth, value);

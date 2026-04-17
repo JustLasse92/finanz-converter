@@ -27,13 +27,13 @@ public class CSVFinanzReader {
 
     private static final Path TRANSACTIONS_ROOT_PATH = Path.of(System.getenv("TRANSACTIONS_ROOT_PATH"));
     private static final Path STOCK_PRICE_PATH = resolvePath("STOCK_PRICE_FILE_PATH");
-    private static final Path TRANSACTIONS_ADDITIONAL_PATH = resolvePath("TRANSACTIONS_ADDITIONAL_FILE_PATH");
-    private static final Path TRANSACTIONS_EXCLUDED_PATH = resolvePath("TRANSACTIONS_EXCLUDED_FILE_PATH");
+    private static final Path CASH_PAYMENTS_FILE_PATH = resolvePath("CASH_PAYMENTS_FILE_PATH");
+    private static final Path EXPENSES_TRANSACTIONS_FILE_PATH = resolvePath("EXPENSES_TRANSACTIONS_FILE_PATH");
     private static final Path SHARED_HELD_PATH = resolvePath("SHARED_HELD_FILE_PATH");
     private static final Path AVAILABLE_CASH_PATH = resolvePath("AVAILABLE_CASH_FILE_PATH");
     private static final Path TRANSACTIONS_SINGLE_2023_PATH = resolvePath("TRANSACTIONS_SINGLE_2023_FILE_PATH");
 
-    private static Path resolvePath(String env){
+    private static Path resolvePath(String env) {
         return TRANSACTIONS_ROOT_PATH.resolve(Path.of(System.getenv(env)));
     }
 
@@ -57,12 +57,12 @@ public class CSVFinanzReader {
         return readCSV(TRANSACTIONS_ROOT_PATH, Transaction.class);
     }
 
-    public List<Transaction> readExcludedTransactions() throws IOException {
-        return readCSV(TRANSACTIONS_EXCLUDED_PATH, Transaction.class);
+    public List<Transaction> readExpensesTransactions() throws IOException {
+        return readCSV(EXPENSES_TRANSACTIONS_FILE_PATH, Transaction.class);
     }
 
-    public List<Transaction> readAdditionalTransactions() throws IOException {
-        return readCSV(TRANSACTIONS_ADDITIONAL_PATH, Transaction.class);
+    public List<Transaction> readCashPayments() throws IOException {
+        return readCSV(CASH_PAYMENTS_FILE_PATH, Transaction.class);
     }
 
     public List<SharedHeld> readAllSharedHelds() throws IOException {

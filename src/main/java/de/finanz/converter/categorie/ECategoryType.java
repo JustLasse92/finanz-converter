@@ -6,13 +6,33 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import static de.finanz.converter.TransactionCategoryMatcher.containsAnyEmpfaenger;
+import static de.finanz.converter.TransactionCategoryMatcher.containsAnySender;
 import static de.finanz.converter.TransactionCategoryMatcher.containsAnyVerwendungszweck;
-import static de.finanz.converter.TransactionCategoryMatcher.containsSender;
 import static de.finanz.converter.TransactionCategoryMatcher.isUmsatztyp;
 
 @AllArgsConstructor
 @Getter
 public enum ECategoryType {
+    TAGESGELDKONTO_TRANSFER("Tagesgeldkonto Transfer", ESuperCategoryType.TAGESGELDKONTO) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            return containsAnyEmpfaenger(transaction, "Lasse Ganske") && containsAnySender(transaction, "Lasse Ganske");
+        }
+    },
+    AUSLAGEN_AUSGANG("Auslagen Ausgaben", ESuperCategoryType.AUSLAGEN) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            // Auslagen werden über expenses_transactions definiert
+            return false;
+        }
+    },
+    AUSLAGEN_EINGANG("Auslagen Eingang", ESuperCategoryType.AUSLAGEN) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            // Auslagen werden über expenses_transactions definiert
+            return false;
+        }
+    },
     FAHRRAD("Fahrrad", ESuperCategoryType.MOBILITAET) {
         @Override
         public boolean matches(Transaction transaction) {
@@ -137,7 +157,7 @@ public enum ECategoryType {
     STROM_HEIZKOSTEN("Strom und Heizkosten", ESuperCategoryType.WOHNEN) {
         @Override
         public boolean matches(Transaction transaction) {
-            return (containsSender(transaction, "NaturStromHandel") || containsAnyEmpfaenger(transaction,
+            return (containsAnySender(transaction, "NaturStromHandel") || containsAnyEmpfaenger(transaction,
                     "NaturStromHandel"));
         }
     },
@@ -224,7 +244,7 @@ public enum ECategoryType {
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.EINGANG)) {
                 // Rückzahlung
-                return containsSender(transaction, "IKEA");
+                return containsAnySender(transaction, "IKEA");
             } else {
                 return containsAnyVerwendungszweck(transaction, "IKEA")
                         || containsAnyVerwendungszweck(transaction, "Materialkosten")
@@ -256,7 +276,7 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             return (containsAnyVerwendungszweck(transaction, "kleinanzeigen", "Wohnungsübernahme", "Hidden Games.Monika Krebs")
-                    || containsSender(transaction, "paypal", "Valerii Malakhov"))
+                    || containsAnySender(transaction, "paypal", "Valerii Malakhov"))
                     && isUmsatztyp(transaction, EUmsatztyp.EINGANG);
         }
     },
@@ -284,7 +304,7 @@ public enum ECategoryType {
     GEHALT("Gehalt", ESuperCategoryType.EINKOMMEN) {
         @Override
         public boolean matches(Transaction transaction) {
-            return containsSender(transaction, "materna")
+            return containsAnySender(transaction, "materna")
                     && isUmsatztyp(transaction, EUmsatztyp.EINGANG);
         }
     },

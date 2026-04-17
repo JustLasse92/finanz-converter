@@ -10,6 +10,8 @@ import java.util.Arrays;
 @Getter
 public enum ECalculationType {
     EINNAMEN_GESAMT("Einnahmen Gesamt"),
+    AUSLAGEN_EINGANG_GESAMT("Auslagen Eingang Gesamt"),
+    AUSLAGEN_AUSGANG_GESAMT("Auslagen Ausgang Gesamt"),
     AUSGABEN_FIX("Fixe Ausgaben"),
     AUSGABEN_VARIABEL("Variable Ausgaben"),
     AUSGABEN_GESAMT("Gesamte Ausgaben"),

@@ -9,34 +9,74 @@ import java.io.IOException;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-
-import static de.finanz.converter.TransactionCategoryMatcher.containsAnyEmpfaenger;
-import static de.finanz.converter.TransactionCategoryMatcher.containsSender;
 
 public class TransactionHelper {
     private final CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
+    private final List<Transaction> expensesTransactions;
+    private final List<Transaction> cashPayments;
 
-    public static Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
-        List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
-                .filter(e -> e.matches(transaction))
-                .toList();
-        if (categoryTypeList.size() != 1) {
-            throw new FinanzConverterException("Es wird ein Match von CategoryType erwartet. Gefunden wurden: " + categoryTypeList + "\nvon: \n " + transaction);
+    public TransactionHelper() throws IOException {
+        this.expensesTransactions = csvFinanzReader.readExpensesTransactions();
+        this.cashPayments = csvFinanzReader.readCashPayments();
+    }
+
+    public Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
+        // Vordefinierte Auslagen werden direkt kategorisiert
+        ECategoryType categoryType = null;
+        for (Transaction expensesTransaction : expensesTransactions) {
+            if (expensesTransaction.almostEqual(transaction)) {
+                categoryType = transaction.getUmsatztyp().equals(EUmsatztyp.AUSGANG) ?
+                        ECategoryType.AUSLAGEN_AUSGANG : ECategoryType.AUSLAGEN_EINGANG;
+                break;
+            }
         }
 
-        Categorie<ECategoryType> categorie = new Categorie<>(categoryTypeList.getFirst());
+        // Alle anderen Kategorien werden über die Matcher bestimmt
+        if (categoryType == null) {
+            List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
+                    .filter(e -> e.matches(transaction))
+                    .toList();
+            if (categoryTypeList.size() != 1) {
+                throw new FinanzConverterException("Es wird ein Match von CategoryType erwartet. Gefunden wurden: " + categoryTypeList + "\nvon: \n " + transaction);
+            }
+            categoryType = categoryTypeList.getFirst();
+        }
+
+        Categorie<ECategoryType> categorie = new Categorie<>(categoryType);
         YearMonth month = transaction.getYearMonthOfBuchungsdatum();
         categorie.addValue(month, transaction.getBetrag());
         return categorie;
     }
 
-    public List<Transaction> getNormalizedTransactions(List<Transaction> allTransactions) throws IOException {
+    public List<Transaction> getNormalizedTransactions(List<Transaction> allTransactions) {
         List<Transaction> transactions = new ArrayList<>(allTransactions);
         removeIrrelevantTransactions(transactions);
-        removeExcludedTransactions(transactions);
-        addAdditionalTransactions(transactions);
         return transactions;
+    }
+
+    public List<Categorie<ECategoryType>> getCashPaymentsCategories() {
+        return cashPayments.stream()
+                .map(transaction -> {
+                    List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
+                            .filter(e -> e.matches(transaction))
+                            .toList();
+
+                    if (categoryTypeList.size() != 1) {
+                        throw new FinanzConverterException("Es wird ein Match von CategoryType erwartet. Gefunden wurden: " + categoryTypeList + "\nvon: \n " + transaction);
+                    }
+
+                    Categorie<ECategoryType> categorie = new Categorie<>(categoryTypeList.getFirst());
+                    YearMonth month = transaction.getYearMonthOfBuchungsdatum();
+                    categorie.addValue(month, transaction.getBetrag());
+
+                    Categorie<ECategoryType> bargeldCategorie = new Categorie<>(ECategoryType.BARGELDABHEBUNGEN);
+                    bargeldCategorie.addValue(month, transaction.getBetrag() * -1);
+                    return List.of(categorie, bargeldCategorie);
+                })
+                .flatMap(Collection::stream)
+                .toList();
     }
 
     private void removeIrrelevantTransactions(List<Transaction> transactions) {
@@ -46,43 +86,11 @@ public class TransactionHelper {
             // Beträge die 0 sind brauchen nicht betrachtet werden
             YearMonth yearMonth = transaction.getYearMonthOfBuchungsdatum();
             return transaction.getBetrag() == 0
-                    // Eingänge vom Tagesgeldkonto sind nicht relevant
-                    || (containsAnyEmpfaenger(transaction, "Lasse Ganske")
-                    && containsSender(transaction, "Lasse Ganske"))
                     // Nur Einträge für das aktuelle Jahr sind relevant
                     || yearMonth.getYear() != now.getYear()
                     // Nur abgeschlossene Monate werden berechnet
                     || !yearMonth.isBefore(now);
         });
-    }
-
-    private void addAdditionalTransactions(List<Transaction> transactions) throws IOException {
-        transactions.addAll(csvFinanzReader.readAdditionalTransactions());
-    }
-
-    private void removeExcludedTransactions(List<Transaction> transactions) throws IOException {
-        List<Integer> yearsOfTransactions = transactions.stream()
-                .map(Transaction::getYearMonthOfBuchungsdatum)
-                .map(YearMonth::getYear)
-                .distinct()
-                .toList();
-        for (Transaction excludedTransaction : csvFinanzReader.readExcludedTransactions()) {
-            if (!yearsOfTransactions.contains(excludedTransaction.getYearMonthOfBuchungsdatum().getYear())) {
-                // Es sollen nur Transaktionen entfernt werden, wenn diese auch zum Jahr der Transaktionen gehören
-                continue;
-            }
-
-            List<Transaction> transactionToRemove = transactions.stream()
-                    .filter(transaction -> transaction.almostEqual(excludedTransaction))
-                    .toList();
-
-            if (transactionToRemove.size() != 1) {
-                throw new FinanzConverterException("Anzahl Matches von excluded Transaction ist " +
-                        transactionToRemove.size() + " von: \n " + excludedTransaction);
-            }
-
-            transactions.remove(transactionToRemove.getFirst());
-        }
     }
 
 
