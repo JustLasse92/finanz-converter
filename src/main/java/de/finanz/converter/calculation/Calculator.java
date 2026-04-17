@@ -2,6 +2,7 @@ package de.finanz.converter.calculation;
 
 import de.finanz.converter.bilanz.Bilanz;
 import de.finanz.converter.cash.AvailableCash;
+import de.finanz.converter.cash.EAvailableCashTyp;
 import de.finanz.converter.categorie.Categorie;
 import de.finanz.converter.categorie.ECategoryType;
 import de.finanz.converter.categorie.ESuperCategoryType;
@@ -16,8 +17,21 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Calculator {
+    private static final List<EAvailableCashTyp> CASH_TYPS = List.of(EAvailableCashTyp.BARGELD, EAvailableCashTyp.TAGESGELDKONTO, EAvailableCashTyp.VERRECHNUNGSKONTO);
+    private static final Set<ESuperCategoryType> CATEGORY_TYPES_AUSGABEN_VARIABEL = Set.of(
+            ESuperCategoryType.LEBENSHALTUNG,
+            ESuperCategoryType.MOBILITAET,
+            ESuperCategoryType.ENTERTAINMENT,
+            ESuperCategoryType.ARBEIT_STUDIUM,
+            ESuperCategoryType.SONSTIGE,
+            ESuperCategoryType.AUSLAGEN);
+    private static final Set<ESuperCategoryType> CATEGORY_TYPES_AUSGABEN_FIX = Set.of(
+            ESuperCategoryType.WOHNEN,
+            ESuperCategoryType.SONSTIGE_VERTRAEGE,
+            ESuperCategoryType.VERSICHERUNGEN);
     private Map<ECalculationType, Categorie<ECalculationType>> calculations;
 
 
@@ -38,11 +52,11 @@ public class Calculator {
         calculateMonatlicherUeberschuss(categories, yearMonthsSorted);
         calculateSparrateGesamt(categories, yearMonthsSorted);
         calculateStocks(sharedHelds, stockPrices);
-        calculateMonatlicheBilanz(yearMonthsSorted);
-        calculateCash(availableCashes);
         calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
-        calculateGirokontoDifferenz(categories);
         calculateAuslagen(categories, yearMonthsSorted);
+        calculateCash(availableCashes, yearMonthsSorted);
+        calculateMonatlicheBilanz(availableCashes, yearMonthsSorted);
+        calculateGirokontoDifferenz(categories);
     }
 
 
@@ -105,10 +119,16 @@ public class Calculator {
                 .sum();
     }
 
-    private void calculateCash(List<AvailableCash> availableCashes) {
-        for (AvailableCash availableCash : availableCashes) {
-            addCalculation(ECalculationType.CASH, availableCash.getYearMonthOfDatum(), availableCash.getBetrag());
+    private void calculateCash(List<AvailableCash> availableCashes, List<YearMonth> yearMonthsSorted) {
+        availableCashes.stream()
+                .filter(cash -> CASH_TYPS.contains(cash.getTyp()))
+                .forEach(availableCash -> addCalculation(ECalculationType.CASH, availableCash.getYearMonthOfDatum(), availableCash.getBetrag()));
+
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            addCalculation(ECalculationType.CASH, yearMonth,
+                    getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth));
         }
+
     }
 
     private void calculateStocks(Collection<SharedHeld> sharedHelds, Collection<StockPrice> stockPrices) {
@@ -153,7 +173,7 @@ public class Calculator {
         }
     }
 
-    private void calculateMonatlicheBilanz(List<YearMonth> yearMonthsSorted) {
+    private void calculateMonatlicheBilanz(List<AvailableCash> availableCashes, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double bilanz = getCalculationValue(ECalculationType.CASH, yearMonth)
                     + getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, yearMonth)
@@ -161,6 +181,11 @@ public class Calculator {
                     + getCalculationValue(ECalculationType.BITCOIN, yearMonth);
             addCalculation(ECalculationType.BILANZ_MONAT, yearMonth, bilanz);
         }
+
+        availableCashes.stream()
+                .filter(availableCash -> availableCash.getTyp().equals(EAvailableCashTyp.AKTIEN_VL))
+                .forEach(availableCash -> addCalculation(ECalculationType.BILANZ_MONAT,
+                        availableCash.getYearMonthOfDatum(), availableCash.getBetrag()));
     }
 
     // (Monatliche Sparrate + Monatlicher Überschuss)
@@ -177,8 +202,7 @@ public class Calculator {
 
     private void calculateAusgabenVariabel(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double sumValues = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.LEBENSHALTUNG, ESuperCategoryType.MOBILITAET,
-                    ESuperCategoryType.ENTERTAINMENT, ESuperCategoryType.SONSTIGE, ESuperCategoryType.AUSLAGEN), yearMonth);
+            double sumValues = sumValuesOfSuperCategoryTypes(categories, CATEGORY_TYPES_AUSGABEN_VARIABEL, yearMonth);
             double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
             double value = sumValues - sparrate;
             addCalculation(ECalculationType.AUSGABEN_VARIABEL, yearMonth, value);
@@ -188,8 +212,7 @@ public class Calculator {
 
     private void calculateAusgabenFix(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double value = sumValuesOfSuperCategoryTypes(categories, List.of(ESuperCategoryType.WOHNEN,
-                    ESuperCategoryType.SONSTIGE_VERTRAEGE, ESuperCategoryType.VERSICHERUNGEN), yearMonth);
+            double value = sumValuesOfSuperCategoryTypes(categories, CATEGORY_TYPES_AUSGABEN_FIX, yearMonth);
             addCalculation(ECalculationType.AUSGABEN_FIX, yearMonth, value);
         }
     }

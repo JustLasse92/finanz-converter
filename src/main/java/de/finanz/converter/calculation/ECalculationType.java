@@ -18,11 +18,11 @@ public enum ECalculationType {
     UEBERSCHUSS_MONAT("Monatlicher Überschuss"),
     SPARRATE_GESAMT("Komplette Sparrate"),
     BILANZ_MONAT("Monatliche Bilanz"),
-    CASH("Cash"),
+    CASH("Summe Cash"),
     VANGUARD_FTSE_ALL_WORLD("Vanguard FTSE All-World"),
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
     BITCOIN("Bitcoin"),
-    GIROKONTO_IST("Girokonto Ist"),
+    GIROKONTO_IST("Girokonto"),
     GIROKONTO_DIFFERENZ("Girokonto Differenz");
     private String name;
 

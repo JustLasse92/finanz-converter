@@ -21,8 +21,30 @@ import java.util.Optional;
 
 public class CSVExporter {
 
-    public static void export(Bilanz bilanz, String outputFileName) throws IOException {
+    private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
+    private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.AUSGABEN_FIX, ECalculationType.AUSGABEN_VARIABEL,
+            ECalculationType.AUSGABEN_GESAMT);
+    private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARRATE_GESAMT);
+    private static final List<ECalculationType> CALCULATION_TYPE_KONTOSTAENDE =
+            List.of(ECalculationType.CASH, ECalculationType.GIROKONTO_IST);
+    private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO,
+            EAvailableCashTyp.VERRECHNUNGSKONTO, EAvailableCashTyp.BARGELD);
+    private static final List<ECalculationType> CALCULATION_TYPE_WERTPAPIERE =
+            List.of(ECalculationType.VANGUARD_FTSE_ALL_WORLD, ECalculationType.ISHARES_NASDAQ_100,
+                    ECalculationType.BITCOIN);
+    private static final List<EAvailableCashTyp> AVAILABLE_CASH_WERTPAPIERE = List.of(EAvailableCashTyp.AKTIEN_VL);
+    private static final List<ECalculationType> CALCULATION_TYPE_BILANZ = List.of(ECalculationType.BILANZ_MONAT);
+    private final Bilanz bilanz;
+    private final Calculator calculator;
+    private final List<YearMonth> gesetzteYearMonths;
 
+    public CSVExporter(Bilanz bilanz) {
+        this.bilanz = bilanz;
+        this.calculator = new Calculator(bilanz);
+        this.gesetzteYearMonths = bilanz.getYearMonthsSorted();
+    }
+
+    public void export(String outputFileName) throws IOException {
         CSVWriter writer = new CSVWriter(
                 new FileWriter(outputFileName),
                 CSVWriter.DEFAULT_SEPARATOR,
@@ -31,68 +53,133 @@ public class CSVExporter {
                 CSVWriter.DEFAULT_LINE_END
         );
 
-        // Header
-        List<YearMonth> gesetzteYearMonths = bilanz.getYearMonthsSorted();
-        String[] header = new String[gesetzteYearMonths.size() + 1];
-        header[0] = "Kategorie";
+        writeHeader(writer);
+        writeCategories(writer);
+        writeCalculations(writer);
 
-        int i = 1;
-        for (YearMonth yearMonth : gesetzteYearMonths) {
-            header[i++] = yearMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.GERMAN); // JANUARY, FEBRUARY, ...
-        }
-
-        writer.writeNext(header);
-
-        for (ESuperCategoryType superCategoryType : ESuperCategoryType.values()) {
-            List<ECategoryType> categoryTypes = Arrays.stream(ECategoryType.values())
-                    .filter(categoryType -> superCategoryType.equals(categoryType.getSuperCategoryType()))
-                    .toList();
-            String[] superCategoryNameRow = new String[1];
-            superCategoryNameRow[0] = superCategoryType.getName();
-            writer.writeNext(superCategoryNameRow);
-
-
-            for (ECategoryType categoryType : categoryTypes) {
-                List<String> rows = new ArrayList<>();
-                rows.add(categoryType.getName());
-                for (YearMonth yearMonth : gesetzteYearMonths) {
-                    // TODO wenn in keinem Monat ein Wert dazu eingetragen wurde, soll die Zeile gar nicht
-                    //  geschrieben werden
-                    Double value = bilanz.getCategoryValue(categoryType, yearMonth);
-                    rows.add(String.format("%.2f", value) + " €");
-                }
-
-                writer.writeNext(rows.toArray(String[]::new));
-            }
-            writer.writeNext(new String[0]); //Leerzeile
-        }
-
-        Calculator calculator = new Calculator(bilanz);
-        for (ECalculationType calculationType : ECalculationType.values()) {
-            List<String> rows = new ArrayList<>();
-            rows.add(calculationType.getName());
-            for (YearMonth yearMonth : gesetzteYearMonths) {
-                rows.add(String.format("%.2f", calculator.getCalculationValue(calculationType, yearMonth)) + " €");
-            }
-
-            writer.writeNext(rows.toArray(String[]::new));
-        }
-        writer.writeNext(new String[0]); //Leerzeile
 
         for (EAvailableCashTyp availableCashTyp : EAvailableCashTyp.values()) {
-            //TODO prüfen ob der CashTyp benötigt wird. Wenn ja -> refactoring
-            if (availableCashTyp.equals(EAvailableCashTyp.GIROKONTO)) {
-                continue;
-            }
             List<String> rows = new ArrayList<>();
             rows.add(availableCashTyp.getBezeichnung());
             for (YearMonth yearMonth : gesetzteYearMonths) {
                 Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
-                availableCashOptional.ifPresent(availableCash -> rows.add(String.format("%.2f", availableCash.getBetrag()) + " €"));
+                availableCashOptional.ifPresent(availableCash -> rows.add(this.formatBetrag(availableCash.getBetrag())));
             }
             writer.writeNext(rows.toArray(String[]::new));
         }
 
         writer.close();
     }
+
+    // "Kategorie","Januar","Februar","März" ...
+    private void writeHeader(CSVWriter writer) {
+        List<String> rows = new ArrayList<>();
+        rows.add("Kategorie");
+
+        gesetzteYearMonths.stream()
+                .map(YearMonth::getMonth)
+                .map(m -> m.getDisplayName(TextStyle.FULL, Locale.GERMAN))
+                .forEach(rows::add);
+
+        writer.writeNext(rows.toArray(String[]::new));
+        writer.writeNext(new String[0]); //Leerzeile
+    }
+
+    private void writeCategories(CSVWriter writer) {
+        List<YearMonth> gesetzteYearMonths = bilanz.getYearMonthsSorted();
+
+        for (ESuperCategoryType superCategoryType : ESuperCategoryType.values()) {
+            // SuperCategory als Überschrift: "Einkommen", "Wohnen", "Versicherungen" ...
+            writer.writeNext(new String[]{superCategoryType.getName()});
+
+
+            // Alle Kategorien der jeweiligen Superkategorie: Möbel/Einrichtung", "Kleidung", ...
+            List<ECategoryType> categoryTypes = Arrays.stream(ECategoryType.values())
+                    .filter(categoryType -> superCategoryType.equals(categoryType.getSuperCategoryType()))
+                    .toList();
+            for (ECategoryType categoryType : categoryTypes) {
+                List<Double> values = new ArrayList<>();
+                for (YearMonth yearMonth : gesetzteYearMonths) {
+                    values.add(bilanz.getCategoryValue(categoryType, yearMonth));
+                }
+
+                if (values.stream().noneMatch(d -> d != 0)) {
+                    // Wenn alle Werte 0 sind, soll die Zeile nicht geschrieben werden
+                    continue;
+                }
+
+                List<String> rows = new ArrayList<>();
+                rows.add(categoryType.getName());
+                rows.addAll(values.stream().map(this::formatBetrag).toList());
+
+                writer.writeNext(rows.toArray(String[]::new));
+            }
+            writer.writeNext(new String[0]); //Leerzeile
+        }
+    }
+
+    private String formatBetrag(Double betrag) {
+        return String.format("%.2f", betrag) + " €";
+    }
+
+
+    private void writeAvailableCashesOfTypes(CSVWriter writer, String header,
+                                             List<EAvailableCashTyp> availableCashTyps) {
+        writeCalculationsOfTypes(writer, header, List.of(), availableCashTyps);
+    }
+
+    private void writeCalculationsOfTypes(CSVWriter writer, String header,
+                                          List<ECalculationType> calculationTypes) {
+        writeCalculationsOfTypes(writer, header, calculationTypes, List.of());
+    }
+
+    private void writeCalculationsOfTypes(CSVWriter writer, String header,
+                                          List<ECalculationType> calculationTypes,
+                                          List<EAvailableCashTyp> availableCashTyps) {
+        writer.writeNext(new String[]{header});
+
+        for (ECalculationType type : calculationTypes) {
+            List<String> row = new ArrayList<>();
+            row.add(type.getName());
+            for (YearMonth yearMonth : gesetzteYearMonths) {
+                row.add(formatBetrag(calculator.getCalculationValue(type, yearMonth)));
+            }
+            writer.writeNext(row.toArray(String[]::new));
+        }
+
+        for (EAvailableCashTyp availableCashTyp : availableCashTyps) {
+            List<String> row = new ArrayList<>();
+            row.add(availableCashTyp.getBezeichnung());
+            for (YearMonth yearMonth : gesetzteYearMonths) {
+                Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
+                availableCashOptional.ifPresent(availableCash -> row.add(this.formatBetrag(availableCash.getBetrag())));
+            }
+            writer.writeNext(row.toArray(String[]::new));
+        }
+
+        writer.writeNext(new String[0]); //Leerzeile
+    }
+
+
+    private void writeCalculations(CSVWriter writer) {
+
+        writeCalculationsOfTypes(writer, "Einnahmen", CALCULATION_TYPE_EINNAHMEN);
+        writeCalculationsOfTypes(writer, "Ausgaben", CALCULATION_TYPE_AUSGABEN);
+        writeCalculationsOfTypes(writer, "Sparrate", CALCULATION_TYPE_SPARRATE);
+        writeCalculationsOfTypes(writer, "Kontostände", CALCULATION_TYPE_KONTOSTAENDE, AVAILABLE_CASH_LIST);
+        writeCalculationsOfTypes(writer, "Wertpapiere", CALCULATION_TYPE_WERTPAPIERE, AVAILABLE_CASH_WERTPAPIERE);
+        writeCalculationsOfTypes(writer, "Bilanz", CALCULATION_TYPE_BILANZ);
+
+
+        int sumDifferenzGirokonto = (int) gesetzteYearMonths.stream()
+                .mapToDouble(yearMonth -> calculator.getCalculationValue(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth))
+                .sum();
+        if (sumDifferenzGirokonto != 0) {
+            // Differenz soll nur ausgegeben werden, wenn auch eine Vorhanden ist
+            writeCalculationsOfTypes(writer, "Differenz in den Berechnungen", List.of(ECalculationType.GIROKONTO_DIFFERENZ));
+        }
+
+    }
+
+
 }

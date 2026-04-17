@@ -61,7 +61,7 @@ public enum ECategoryType {
             return false;
         }
     },
-    REISE("REISEN", ESuperCategoryType.ENTERTAINMENT) {
+    REISE("Reisen", ESuperCategoryType.ENTERTAINMENT) {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {

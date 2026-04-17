@@ -7,7 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum EAvailableCashTyp {
     BARGELD("Bargeld"),
-    GIROKONTO("Girokonto"),
     TAGESGELDKONTO("Tagesgeldkonto"),
     VERRECHNUNGSKONTO("Verrechnungskonto"),
     AKTIEN_VL("Aktien VL");

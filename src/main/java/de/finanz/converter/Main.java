@@ -16,8 +16,8 @@ public class Main {
 
 
         Bilanz bilanz = new Bilanz();
-
-        CSVExporter.export(bilanz, OUTPUT_FILE_NAME);
+        CSVExporter csvExporter = new CSVExporter(bilanz);
+        csvExporter.export(OUTPUT_FILE_NAME);
 
     }
 }
