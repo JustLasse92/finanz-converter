@@ -15,7 +15,6 @@ import static de.finanz.converter.TransactionCategoryMatcher.containsAnyEmpfaeng
 import static de.finanz.converter.TransactionCategoryMatcher.containsSender;
 
 public class TransactionHelper {
-    private static Integer YEAR = Integer.valueOf(System.getenv("YEAR"));
     private final CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
 
     public static Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
@@ -41,14 +40,19 @@ public class TransactionHelper {
     }
 
     private void removeIrrelevantTransactions(List<Transaction> transactions) {
+        YearMonth now = YearMonth.now();
+
         transactions.removeIf(transaction -> {
             // Beträge die 0 sind brauchen nicht betrachtet werden
+            YearMonth yearMonth = transaction.getYearMonthOfBuchungsdatum();
             return transaction.getBetrag() == 0
                     // Eingänge vom Tagesgeldkonto sind nicht relevant
                     || (containsAnyEmpfaenger(transaction, "Lasse Ganske")
                     && containsSender(transaction, "Lasse Ganske"))
                     // Nur Einträge für das aktuelle Jahr sind relevant
-                    || transaction.getYearMonthOfBuchungsdatum().getYear() != YEAR;
+                    || yearMonth.getYear() != now.getYear()
+                    // Nur abgeschlossene Monate werden berechnet
+                    || !yearMonth.isBefore(now);
         });
     }
 

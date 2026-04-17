@@ -52,25 +52,10 @@ public class Calculator {
         return 0.0;
     }
 
-    private Double getCalculationValueSumAllYearMonths(ECalculationType calculationType) {
-        if (calculations.containsKey(calculationType)) {
-            return calculations.get(calculationType)
-                    .getValues()
-                    .values()
-                    .stream()
-                    .mapToDouble(d -> d)
-                    .sum();
-        }
-        return 0.0;
-    }
-
-    private void calculateGirokontoDifferenz(double umsatz2023) {
-        // TODO die Differenz zum IST Stand für die Monate berechnen
+    private void calculateGirokontoDifferenz() {
         Categorie<ECalculationType> girokontoIst = calculations.get(ECalculationType.GIROKONTO_IST);
         Map<YearMonth, Double> values = girokontoIst.getValues();
         values.forEach((yearMonth, girokontoIstBetrag) -> {
-//            Double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth);
-//            Double einnahmenGesamt = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth);
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             Double girokontoIstBetragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
             Double calcGesamt = girokontoIstBetragVormonat + monatlicherUeberschuss;
@@ -91,12 +76,12 @@ public class Calculator {
         for (YearMonth yearMonth : allYearMonths) {
             Double sumTransactionsInYearMonth = sumAllTransactionsInYearMonth(allTransactions, yearMonth);
             Double betragVorher = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
-            Double girokontoIstBetrag = sumTransactionsInYearMonth +  betragVorher;
+            Double girokontoIstBetrag = sumTransactionsInYearMonth + betragVorher;
             addCalculation(ECalculationType.GIROKONTO_IST, yearMonth, girokontoIstBetrag);
         }
     }
 
-    private Double sumAllTransactionsInYearMonth(List<Transaction> transactions, YearMonth yearMonth){
+    private Double sumAllTransactionsInYearMonth(List<Transaction> transactions, YearMonth yearMonth) {
         return transactions.stream()
                 .filter(t -> t.getYearMonthOfBuchungsdatum().equals(yearMonth))
                 .map(Transaction::getBetrag)
