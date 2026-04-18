@@ -13,7 +13,7 @@ import static de.finanz.converter.TransactionCategoryMatcher.isUmsatztyp;
 @AllArgsConstructor
 @Getter
 public enum ECategoryType {
-    TAGESGELDKONTO_TRANSFER("Tagesgeldkonto Transfer", ESuperCategoryType.TAGESGELDKONTO) {
+    TAGESGELDKONTO_TRANSFER("Tagesgeldkonto Transfer", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
             return containsAnyEmpfaenger(transaction, "Lasse Ganske") && containsAnySender(transaction, "Lasse Ganske");
@@ -131,14 +131,7 @@ public enum ECategoryType {
             return false;
         }
     },
-    BARGELDAUSGABEN("Bargeldausgaben", ESuperCategoryType.SONSTIGE) {
-        @Override
-        public boolean matches(Transaction transaction) {
-            return (containsAnyVerwendungszweck(transaction, "Bargeldausgaben")
-                    && isUmsatztyp(transaction, EUmsatztyp.AUSGANG));
-        }
-    },
-    BARGELDABHEBUNGEN("Bargeldabhebungen", ESuperCategoryType.SONSTIGE) {
+    BARGELDABHEBUNGEN("Bargeldabhebungen", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
             return (containsAnyEmpfaenger(transaction, "Kreissparkasse.Diepholz/BASSUM", "SPARKASSE.BREMEN", "SPARKASSE.DORTMUND/SPK.DO.91")
@@ -308,7 +301,7 @@ public enum ECategoryType {
                     && isUmsatztyp(transaction, EUmsatztyp.EINGANG);
         }
     },
-    SPARRATE("Sparrate", ESuperCategoryType.SONSTIGE) {
+    SPARPLAN("Sparplan", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {

@@ -45,6 +45,7 @@ public class Calculator {
         List<AvailableCash> availableCashes = bilanz.getAvailableCashes();
         List<Transaction> allTransactions = bilanz.getAllTransactions();
 
+        calculateBargeldausgaben(availableCashes, categories);
         calculateEinnahmenGesamt(categories, yearMonthsSorted);
         calculateAusgabenFix(categories, yearMonthsSorted);
         calculateAusgabenVariabel(categories, yearMonthsSorted);
@@ -67,6 +68,34 @@ public class Calculator {
         return 0.0;
     }
 
+    private void calculateBargeldausgaben(List<AvailableCash> availableCashes, Collection<Categorie<ECategoryType>> categories) {
+        for (AvailableCash availableCash : availableCashes) {
+            if (!availableCash.getTyp().equals(EAvailableCashTyp.BARGELD)) {
+                continue;
+            }
+            YearMonth aktuellerYearMonth = availableCash.getYearMonthOfDatum();
+            YearMonth vormonat = aktuellerYearMonth.minusMonths(1);
+
+            List<Double> bargeldVormonatOptional = availableCashes.stream()
+                    .filter(cash -> cash.getTyp().equals(EAvailableCashTyp.BARGELD))
+                    .filter(cash -> cash.getYearMonthOfDatum().equals(vormonat))
+                    .map(AvailableCash::getBetrag)
+                    .toList();
+
+            if (bargeldVormonatOptional.size() > 1) {
+                throw new FinanzConverterException("Es wurde erwartet einen Bargeldbestand zum Vormonat zu finden. "
+                        + "Es wurden jedoch " + bargeldVormonatOptional.size() + " gefunden");
+            }
+
+            Double bargeldAktuellerMonat = availableCash.getBetrag();
+            Double bargeldVormonat = bargeldVormonatOptional.isEmpty() ? 0.0 : bargeldVormonatOptional.getFirst();
+            Double bargeldAbhebungen = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.BARGELDABHEBUNGEN), aktuellerYearMonth);
+            Double bargeldAusgaben = bargeldAktuellerMonat + bargeldAbhebungen - bargeldVormonat;
+
+            addCalculation(ECalculationType.BARGELD_AUSGABEN, aktuellerYearMonth, bargeldAusgaben);
+        }
+    }
+
     private void calculateAuslagen(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double auslagenAusgangGesamt = sumValuesOfCategoryTypes(categories,
@@ -84,12 +113,14 @@ public class Calculator {
         values.forEach((yearMonth, girokontoIstBetrag) -> {
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             Double girokontoIstBetragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
-            double transferTagesgeldGesamt = categories.stream()
-                    .filter(categorie -> categorie.getType().equals(ECategoryType.TAGESGELDKONTO_TRANSFER))
+            double transferzahlungenGesamt = categories.stream()
+                    .filter(categorie -> categorie.getType().getSuperCategoryType().equals(ESuperCategoryType.TRANSFER))
                     .mapToDouble(categorie -> categorie.getValue(yearMonth))
                     .sum();
-            Double calcGesamt = girokontoIstBetragVormonat + monatlicherUeberschuss + transferTagesgeldGesamt;
-            Double diff = girokontoIstBetrag - calcGesamt;
+            double bargeldausgaben = getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
+            Double girokontoCalculated =
+                    girokontoIstBetragVormonat + monatlicherUeberschuss + transferzahlungenGesamt - bargeldausgaben;
+            Double diff = girokontoIstBetrag - girokontoCalculated;
             addCalculation(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth, diff);
         });
     }
@@ -159,16 +190,17 @@ public class Calculator {
     private void calculateMonatlicherUeberschuss(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double monatlicherUeberschuss = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth)
-                    + getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth)
-                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
+                    + getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth);
+//                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
             addCalculation(ECalculationType.UEBERSCHUSS_MONAT, yearMonth, monatlicherUeberschuss);
         }
     }
 
     private void calculateAusgabenGesamt(List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double ausgabenGesamt = getCalculationValue(ECalculationType.AUSGABEN_FIX, yearMonth)
-                    + getCalculationValue(ECalculationType.AUSGABEN_VARIABEL, yearMonth);
+            double ausgabenGesamt = getCalculationValue(ECalculationType.GIROKONTO_AUSGABEN_FIX, yearMonth)
+                    + getCalculationValue(ECalculationType.AUSGABEN_VARIABEL, yearMonth)
+                    + getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
             addCalculation(ECalculationType.AUSGABEN_GESAMT, yearMonth, ausgabenGesamt);
         }
     }
@@ -191,7 +223,7 @@ public class Calculator {
     // (Monatliche Sparrate + Monatlicher Überschuss)
     private void calculateSparrateGesamt(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
+            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
             // Sparrate ist negativ angegeben. Hier wird der postive Wert gebraucht
             sparrate *= -1;
             Double ueberschussMonat = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
@@ -203,8 +235,9 @@ public class Calculator {
     private void calculateAusgabenVariabel(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double sumValues = sumValuesOfSuperCategoryTypes(categories, CATEGORY_TYPES_AUSGABEN_VARIABEL, yearMonth);
-            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARRATE), yearMonth);
-            double value = sumValues - sparrate;
+//            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
+//            double bargeldausgaben = getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
+            double value = sumValues;
             addCalculation(ECalculationType.AUSGABEN_VARIABEL, yearMonth, value);
         }
 
@@ -213,7 +246,7 @@ public class Calculator {
     private void calculateAusgabenFix(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double value = sumValuesOfSuperCategoryTypes(categories, CATEGORY_TYPES_AUSGABEN_FIX, yearMonth);
-            addCalculation(ECalculationType.AUSGABEN_FIX, yearMonth, value);
+            addCalculation(ECalculationType.GIROKONTO_AUSGABEN_FIX, yearMonth, value);
         }
     }
 

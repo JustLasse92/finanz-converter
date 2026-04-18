@@ -22,11 +22,13 @@ import java.util.Optional;
 public class CSVExporter {
 
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
-    private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.AUSGABEN_FIX, ECalculationType.AUSGABEN_VARIABEL,
+    private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
+            ECalculationType.AUSGABEN_VARIABEL,
+            ECalculationType.BARGELD_AUSGABEN,
             ECalculationType.AUSGABEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARRATE_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_KONTOSTAENDE =
-            List.of(ECalculationType.CASH, ECalculationType.GIROKONTO_IST);
+            List.of(ECalculationType.GIROKONTO_IST, ECalculationType.CASH);
     private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO,
             EAvailableCashTyp.VERRECHNUNGSKONTO, EAvailableCashTyp.BARGELD);
     private static final List<ECalculationType> CALCULATION_TYPE_WERTPAPIERE =
@@ -56,17 +58,6 @@ public class CSVExporter {
         writeHeader(writer);
         writeCategories(writer);
         writeCalculations(writer);
-
-
-        for (EAvailableCashTyp availableCashTyp : EAvailableCashTyp.values()) {
-            List<String> rows = new ArrayList<>();
-            rows.add(availableCashTyp.getBezeichnung());
-            for (YearMonth yearMonth : gesetzteYearMonths) {
-                Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
-                availableCashOptional.ifPresent(availableCash -> rows.add(this.formatBetrag(availableCash.getBetrag())));
-            }
-            writer.writeNext(rows.toArray(String[]::new));
-        }
 
         writer.close();
     }
@@ -138,14 +129,6 @@ public class CSVExporter {
                                           List<EAvailableCashTyp> availableCashTyps) {
         writer.writeNext(new String[]{header});
 
-        for (ECalculationType type : calculationTypes) {
-            List<String> row = new ArrayList<>();
-            row.add(type.getName());
-            for (YearMonth yearMonth : gesetzteYearMonths) {
-                row.add(formatBetrag(calculator.getCalculationValue(type, yearMonth)));
-            }
-            writer.writeNext(row.toArray(String[]::new));
-        }
 
         for (EAvailableCashTyp availableCashTyp : availableCashTyps) {
             List<String> row = new ArrayList<>();
@@ -153,6 +136,15 @@ public class CSVExporter {
             for (YearMonth yearMonth : gesetzteYearMonths) {
                 Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
                 availableCashOptional.ifPresent(availableCash -> row.add(this.formatBetrag(availableCash.getBetrag())));
+            }
+            writer.writeNext(row.toArray(String[]::new));
+        }
+
+        for (ECalculationType type : calculationTypes) {
+            List<String> row = new ArrayList<>();
+            row.add(type.getName());
+            for (YearMonth yearMonth : gesetzteYearMonths) {
+                row.add(formatBetrag(calculator.getCalculationValue(type, yearMonth)));
             }
             writer.writeNext(row.toArray(String[]::new));
         }
@@ -167,10 +159,6 @@ public class CSVExporter {
         writeCalculationsOfTypes(writer, "Ausgaben", CALCULATION_TYPE_AUSGABEN);
         writeCalculationsOfTypes(writer, "Sparrate", CALCULATION_TYPE_SPARRATE);
         writeCalculationsOfTypes(writer, "Kontostände", CALCULATION_TYPE_KONTOSTAENDE, AVAILABLE_CASH_LIST);
-        writeCalculationsOfTypes(writer, "Wertpapiere", CALCULATION_TYPE_WERTPAPIERE, AVAILABLE_CASH_WERTPAPIERE);
-        writeCalculationsOfTypes(writer, "Bilanz", CALCULATION_TYPE_BILANZ);
-
-
         int sumDifferenzGirokonto = (int) gesetzteYearMonths.stream()
                 .mapToDouble(yearMonth -> calculator.getCalculationValue(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth))
                 .sum();
@@ -178,6 +166,9 @@ public class CSVExporter {
             // Differenz soll nur ausgegeben werden, wenn auch eine Vorhanden ist
             writeCalculationsOfTypes(writer, "Differenz in den Berechnungen", List.of(ECalculationType.GIROKONTO_DIFFERENZ));
         }
+        writeCalculationsOfTypes(writer, "Wertpapiere", CALCULATION_TYPE_WERTPAPIERE, AVAILABLE_CASH_WERTPAPIERE);
+        writeCalculationsOfTypes(writer, "Bilanz", CALCULATION_TYPE_BILANZ);
+
 
     }
 

@@ -4,7 +4,6 @@ import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvCustomBindByName;
 import com.opencsv.bean.CsvDate;
 import com.opencsv.bean.CsvNumber;
-import de.finanz.converter.categorie.ECategoryType;
 import lombok.Data;
 
 import java.time.Month;
@@ -57,8 +56,6 @@ public class Transaction {
     @CsvNumber(value = "#.##")
     private Double betrag;
 
-    @CsvBindByName(column = "CategoryType", required = false)
-    private ECategoryType categoryType;
 
     @Override
     public String toString() {
@@ -75,7 +72,6 @@ public class Transaction {
                 "\nkundenreferenz='" + kundenreferenz + '\'' +
                 "\numsatztyp=" + umsatztyp +
                 "\nbetrag=" + betrag +
-                "\ncategoryType=" + categoryType +
                 '}';
     }
 

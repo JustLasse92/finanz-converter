@@ -9,17 +9,14 @@ import java.io.IOException;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 public class TransactionHelper {
     private final CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
     private final List<Transaction> expensesTransactions;
-    private final List<Transaction> cashPayments;
 
     public TransactionHelper() throws IOException {
         this.expensesTransactions = csvFinanzReader.readExpensesTransactions();
-        this.cashPayments = csvFinanzReader.readCashPayments();
     }
 
     public Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
@@ -56,28 +53,6 @@ public class TransactionHelper {
         return transactions;
     }
 
-    public List<Categorie<ECategoryType>> getCashPaymentsCategories() {
-        return cashPayments.stream()
-                .map(transaction -> {
-                    List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
-                            .filter(e -> e.matches(transaction))
-                            .toList();
-
-                    if (categoryTypeList.size() != 1) {
-                        throw new FinanzConverterException("Es wird ein Match von CategoryType erwartet. Gefunden wurden: " + categoryTypeList + "\nvon: \n " + transaction);
-                    }
-
-                    Categorie<ECategoryType> categorie = new Categorie<>(categoryTypeList.getFirst());
-                    YearMonth month = transaction.getYearMonthOfBuchungsdatum();
-                    categorie.addValue(month, transaction.getBetrag());
-
-                    Categorie<ECategoryType> bargeldCategorie = new Categorie<>(ECategoryType.BARGELDABHEBUNGEN);
-                    bargeldCategorie.addValue(month, transaction.getBetrag() * -1);
-                    return List.of(categorie, bargeldCategorie);
-                })
-                .flatMap(Collection::stream)
-                .toList();
-    }
 
     private void removeIrrelevantTransactions(List<Transaction> transactions) {
         YearMonth now = YearMonth.now();

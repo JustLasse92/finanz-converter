@@ -15,7 +15,7 @@ public enum ESuperCategoryType {
     ARBEIT_STUDIUM("Arbeit und Studium"),
     ENTERTAINMENT("Entertainment"),
     SONSTIGE("Sonstige"),
-    TAGESGELDKONTO("Tagesgeldkonto"),
+    TRANSFER("Transferzahlungen"),
     AUSLAGEN("Auslagen");
 
     private String name;

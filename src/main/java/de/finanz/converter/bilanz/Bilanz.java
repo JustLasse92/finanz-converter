@@ -28,7 +28,6 @@ public class Bilanz {
     private final List<Transaction> allTransactions;
     private final List<AvailableCash> availableCashes;
     private final Map<ECategoryType, Categorie<ECategoryType>> categories;
-    private final List<Transaction> cashPayments;
     private final double umsatz2023;
 
     public Bilanz() throws IOException {
@@ -41,15 +40,12 @@ public class Bilanz {
         this.availableCashes = csvFinanzReader.readAvailableCash();
         this.allTransactions = csvFinanzReader.readTransactions();
         this.umsatz2023 = csvFinanzReader.readSummeUmsaetze2023();
-        this.cashPayments = csvFinanzReader.readCashPayments();
 
         // TODO TransactionHelper schöner machen
         transactionHelper.getNormalizedTransactions(allTransactions).stream()
                 .map(transactionHelper::mapToCategorie)
                 .forEach(this::addCategoryValues);
 
-        transactionHelper.getCashPaymentsCategories()
-                .forEach(this::addCategoryValues);
 
     }
 

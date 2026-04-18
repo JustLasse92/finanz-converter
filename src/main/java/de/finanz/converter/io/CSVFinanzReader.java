@@ -27,7 +27,6 @@ public class CSVFinanzReader {
 
     private static final Path TRANSACTIONS_ROOT_PATH = Path.of(System.getenv("TRANSACTIONS_ROOT_PATH"));
     private static final Path STOCK_PRICE_PATH = resolvePath("STOCK_PRICE_FILE_PATH");
-    private static final Path CASH_PAYMENTS_FILE_PATH = resolvePath("CASH_PAYMENTS_FILE_PATH");
     private static final Path EXPENSES_TRANSACTIONS_FILE_PATH = resolvePath("EXPENSES_TRANSACTIONS_FILE_PATH");
     private static final Path SHARED_HELD_PATH = resolvePath("SHARED_HELD_FILE_PATH");
     private static final Path AVAILABLE_CASH_PATH = resolvePath("AVAILABLE_CASH_FILE_PATH");
@@ -59,10 +58,6 @@ public class CSVFinanzReader {
 
     public List<Transaction> readExpensesTransactions() throws IOException {
         return readCSV(EXPENSES_TRANSACTIONS_FILE_PATH, Transaction.class);
-    }
-
-    public List<Transaction> readCashPayments() throws IOException {
-        return readCSV(CASH_PAYMENTS_FILE_PATH, Transaction.class);
     }
 
     public List<SharedHeld> readAllSharedHelds() throws IOException {
