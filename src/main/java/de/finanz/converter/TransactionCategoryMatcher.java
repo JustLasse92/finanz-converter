@@ -4,7 +4,6 @@ import de.finanz.converter.transaction.EUmsatztyp;
 import de.finanz.converter.transaction.Transaction;
 
 import java.util.Arrays;
-import java.util.Calendar;
 
 public class TransactionCategoryMatcher {
 
@@ -31,11 +30,6 @@ public class TransactionCategoryMatcher {
 
     public static boolean isUmsatztyp(Transaction transaction, EUmsatztyp eUmsatztyp) {
         return transaction.getUmsatztyp().equals(eUmsatztyp);
-    }
-
-    public static boolean containsBuchungsdatum(Transaction transaction, Calendar... buchungsdaten) {
-        return Arrays.stream(buchungsdaten)
-                .anyMatch(cal -> transaction.getBuchungsdatum().equals(cal));
     }
 
 

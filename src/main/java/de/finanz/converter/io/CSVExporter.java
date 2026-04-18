@@ -21,6 +21,8 @@ import java.util.Optional;
 
 public class CSVExporter {
 
+    public static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
+            , ECalculationType.GIROKONTO_DIFFERENZ);
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.AUSGABEN_VARIABEL,
@@ -152,24 +154,30 @@ public class CSVExporter {
         writer.writeNext(new String[0]); //Leerzeile
     }
 
+    private void writeCashDifferenz(CSVWriter writer) {
+        if (differenceExists()) {
+            // Differenz soll nur ausgegeben werden, wenn auch eine Vorhanden ist
+            writeCalculationsOfTypes(writer, "Differenz in den Berechnungen", DIFFERENZ);
+        }
+    }
+
+    private boolean differenceExists() {
+        return (int) gesetzteYearMonths.stream()
+                .mapToDouble(yearMonth -> DIFFERENZ.stream()
+                        .mapToDouble(type -> calculator.getCalculationValue(type, yearMonth))
+                        .sum())
+                .sum() != 0;
+    }
+
 
     private void writeCalculations(CSVWriter writer) {
-
         writeCalculationsOfTypes(writer, "Einnahmen", CALCULATION_TYPE_EINNAHMEN);
         writeCalculationsOfTypes(writer, "Ausgaben", CALCULATION_TYPE_AUSGABEN);
         writeCalculationsOfTypes(writer, "Sparrate", CALCULATION_TYPE_SPARRATE);
         writeCalculationsOfTypes(writer, "Kontostände", CALCULATION_TYPE_KONTOSTAENDE, AVAILABLE_CASH_LIST);
-        int sumDifferenzGirokonto = (int) gesetzteYearMonths.stream()
-                .mapToDouble(yearMonth -> calculator.getCalculationValue(ECalculationType.GIROKONTO_DIFFERENZ, yearMonth))
-                .sum();
-        if (sumDifferenzGirokonto != 0) {
-            // Differenz soll nur ausgegeben werden, wenn auch eine Vorhanden ist
-            writeCalculationsOfTypes(writer, "Differenz in den Berechnungen", List.of(ECalculationType.GIROKONTO_DIFFERENZ));
-        }
+        writeCashDifferenz(writer);
         writeCalculationsOfTypes(writer, "Wertpapiere", CALCULATION_TYPE_WERTPAPIERE, AVAILABLE_CASH_WERTPAPIERE);
         writeCalculationsOfTypes(writer, "Bilanz", CALCULATION_TYPE_BILANZ);
-
-
     }
 
 

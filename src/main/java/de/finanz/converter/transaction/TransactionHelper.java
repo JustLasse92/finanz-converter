@@ -13,25 +13,25 @@ import java.util.List;
 
 public class TransactionHelper {
     private final CSVFinanzReader csvFinanzReader = new CSVFinanzReader();
-    private final List<Transaction> expensesTransactions;
+    private final List<Transaction> transactionsAdditionalContext;
 
     public TransactionHelper() throws IOException {
-        this.expensesTransactions = csvFinanzReader.readExpensesTransactions();
+        this.transactionsAdditionalContext = csvFinanzReader.readTransactionsAdditionalContext();
     }
 
     public Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
         // Vordefinierte Auslagen werden direkt kategorisiert
         ECategoryType categoryType = null;
-        for (Transaction expensesTransaction : expensesTransactions) {
-            if (expensesTransaction.almostEqual(transaction)) {
+        EAdditionalCategory additionalCategory = transaction.getAdditionalCategory();
+        if (additionalCategory != null) {
+            if (additionalCategory == EAdditionalCategory.AUSLAGEN) {
                 categoryType = transaction.getUmsatztyp().equals(EUmsatztyp.AUSGANG) ?
                         ECategoryType.AUSLAGEN_AUSGANG : ECategoryType.AUSLAGEN_EINGANG;
-                break;
+            } else {
+                throw new FinanzConverterException("Unexpected value: " + additionalCategory);
             }
-        }
-
-        // Alle anderen Kategorien werden über die Matcher bestimmt
-        if (categoryType == null) {
+        } else {
+            // Alle anderen Kategorien werden über die Matcher bestimmt
             List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
                     .filter(e -> e.matches(transaction))
                     .toList();
@@ -53,6 +53,19 @@ public class TransactionHelper {
         return transactions;
     }
 
+    public void replaceWithAdditionalTransactionContext(List<Transaction> transactions) {
+        outer:
+        for (Transaction transactionWithAdditionalContext : this.transactionsAdditionalContext) {
+            for (int i = 0; i < transactions.size(); i++) {
+                if (transactions.get(i).almostEqual(transactionWithAdditionalContext)) {
+                    transactions.remove(i);
+                    transactions.add(i, transactionWithAdditionalContext);
+                    continue outer;
+                }
+            }
+            throw new FinanzConverterException("Konnte keine passende Transaction finden zu: " + transactionWithAdditionalContext);
+        }
+    }
 
     private void removeIrrelevantTransactions(List<Transaction> transactions) {
         YearMonth now = YearMonth.now();

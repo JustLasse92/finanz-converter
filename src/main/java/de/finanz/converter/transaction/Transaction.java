@@ -11,6 +11,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Objects;
 
 @Data
 public class Transaction {
@@ -56,6 +57,12 @@ public class Transaction {
     @CsvNumber(value = "#.##")
     private Double betrag;
 
+    @CsvBindByName(column = "Additional Buchungsdatum")
+    @CsvDate("dd.MM.yy")
+    private Calendar additionalBuchungsdatum;
+
+    @CsvBindByName(column = "Additional Category")
+    private EAdditionalCategory additionalCategory;
 
     @Override
     public String toString() {
@@ -72,6 +79,8 @@ public class Transaction {
                 "\nkundenreferenz='" + kundenreferenz + '\'' +
                 "\numsatztyp=" + umsatztyp +
                 "\nbetrag=" + betrag +
+                "\nadditionalBuchungsdatum=" + additionalBuchungsdatum +
+                "\nadditionalCategory=" + additionalCategory +
                 '}';
     }
 
@@ -96,7 +105,8 @@ public class Transaction {
     }
 
     public YearMonth getYearMonthOfBuchungsdatum() {
-        return YearMonth.of(getBuchungsdatum().get(Calendar.YEAR),
-                Month.of(getBuchungsdatum().get(Calendar.MONTH) + 1));
+        Calendar calendar = Objects.requireNonNullElse(getAdditionalBuchungsdatum(), getBuchungsdatum());
+        return YearMonth.of(calendar.get(Calendar.YEAR),
+                Month.of(calendar.get(Calendar.MONTH) + 1));
     }
 }

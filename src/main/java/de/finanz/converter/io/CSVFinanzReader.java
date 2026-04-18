@@ -31,6 +31,7 @@ public class CSVFinanzReader {
     private static final Path SHARED_HELD_PATH = resolvePath("SHARED_HELD_FILE_PATH");
     private static final Path AVAILABLE_CASH_PATH = resolvePath("AVAILABLE_CASH_FILE_PATH");
     private static final Path TRANSACTIONS_SINGLE_2023_PATH = resolvePath("TRANSACTIONS_SINGLE_2023_FILE_PATH");
+    private static final Path TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH = resolvePath("TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH");
 
     private static Path resolvePath(String env) {
         return TRANSACTIONS_ROOT_PATH.resolve(Path.of(System.getenv(env)));
@@ -56,8 +57,8 @@ public class CSVFinanzReader {
         return readCSV(TRANSACTIONS_ROOT_PATH, Transaction.class);
     }
 
-    public List<Transaction> readExpensesTransactions() throws IOException {
-        return readCSV(EXPENSES_TRANSACTIONS_FILE_PATH, Transaction.class);
+    public List<Transaction> readTransactionsAdditionalContext() throws IOException {
+        return readCSV(TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH, Transaction.class);
     }
 
     public List<SharedHeld> readAllSharedHelds() throws IOException {

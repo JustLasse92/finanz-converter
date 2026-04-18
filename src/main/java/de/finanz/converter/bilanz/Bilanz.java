@@ -39,6 +39,7 @@ public class Bilanz {
         this.sharedHelds = csvFinanzReader.readAllSharedHelds();
         this.availableCashes = csvFinanzReader.readAvailableCash();
         this.allTransactions = csvFinanzReader.readTransactions();
+        transactionHelper.replaceWithAdditionalTransactionContext(allTransactions);
         this.umsatz2023 = csvFinanzReader.readSummeUmsaetze2023();
 
         // TODO TransactionHelper schöner machen
