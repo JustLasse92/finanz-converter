@@ -21,7 +21,7 @@ public class TransactionHelper {
 
     public Categorie<ECategoryType> mapToCategorie(Transaction transaction) {
         // Vordefinierte Auslagen werden direkt kategorisiert
-        ECategoryType categoryType = null;
+        ECategoryType categoryType;
         EAdditionalCategory additionalCategory = transaction.getAdditionalCategory();
         if (additionalCategory != null) {
             if (additionalCategory == EAdditionalCategory.AUSLAGEN) {
@@ -35,10 +35,12 @@ public class TransactionHelper {
             List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
                     .filter(e -> e.matches(transaction))
                     .toList();
-            if (categoryTypeList.size() != 1) {
-                throw new FinanzConverterException("Es wird ein Match von CategoryType erwartet. Gefunden wurden: " + categoryTypeList + "\nvon: \n " + transaction);
+            if (categoryTypeList.size() > 1) {
+                throw new FinanzConverterException("Es wurde mehr als ein Match von CategoryType gefunden " +
+                        "wurden: " + categoryTypeList + "\nvon: \n " + transaction);
             }
-            categoryType = categoryTypeList.getFirst();
+
+            categoryType = categoryTypeList.isEmpty() ? ECategoryType.NICHT_KATEGORISIERT : categoryTypeList.getFirst();
         }
 
         Categorie<ECategoryType> categorie = new Categorie<>(categoryType);
@@ -74,8 +76,6 @@ public class TransactionHelper {
             // Beträge die 0 sind brauchen nicht betrachtet werden
             YearMonth yearMonth = transaction.getYearMonthOfBuchungsdatum();
             return transaction.getBetrag() == 0
-                    // Nur Einträge für das aktuelle Jahr sind relevant
-                    || yearMonth.getYear() != now.getYear()
                     // Nur abgeschlossene Monate werden berechnet
                     || !yearMonth.isBefore(now);
         });

@@ -10,7 +10,7 @@ import java.io.IOException;
 public class Main {
 
 
-    public static final String OUTPUT_FILE_NAME = "bilanz.csv";
+    public static final String OUTPUT_FILE_NAME = "bilanz";
 
     public static void main(String[] args) throws IOException {
 

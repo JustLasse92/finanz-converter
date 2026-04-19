@@ -13,10 +13,17 @@ import static de.finanz.converter.TransactionCategoryMatcher.isUmsatztyp;
 @AllArgsConstructor
 @Getter
 public enum ECategoryType {
+    NICHT_KATEGORISIERT("Nicht kategorisiert", ESuperCategoryType.SONSTIGE) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            return false;
+        }
+    },
     TAGESGELDKONTO_TRANSFER("Tagesgeldkonto Transfer", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
-            return containsAnyEmpfaenger(transaction, "Lasse Ganske") && containsAnySender(transaction, "Lasse Ganske");
+            return containsAnyEmpfaenger(transaction, "Lasse Ganske") && containsAnySender(transaction, "Lasse Ganske")
+                    && transaction.getVerwendungszweck().isEmpty();
         }
     },
     AUSLAGEN_AUSGANG("Auslagen Ausgaben", ESuperCategoryType.AUSLAGEN) {

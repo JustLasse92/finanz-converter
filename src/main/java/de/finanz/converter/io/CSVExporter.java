@@ -8,6 +8,7 @@ import de.finanz.converter.cash.AvailableCash;
 import de.finanz.converter.cash.EAvailableCashTyp;
 import de.finanz.converter.categorie.ECategoryType;
 import de.finanz.converter.categorie.ESuperCategoryType;
+import de.finanz.converter.exception.FinanzConverterException;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class CSVExporter {
 
     public static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
             , ECalculationType.GIROKONTO_DIFFERENZ);
+    public static final String FILE_NAME_FORMAT = "%s_%d.csv";
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.AUSGABEN_VARIABEL,
@@ -40,28 +42,38 @@ public class CSVExporter {
     private static final List<ECalculationType> CALCULATION_TYPE_BILANZ = List.of(ECalculationType.BILANZ_MONAT);
     private final Bilanz bilanz;
     private final Calculator calculator;
-    private final List<YearMonth> gesetzteYearMonths;
+    private final List<YearMonth> allGesetzteYearMonths;
+    private List<YearMonth> currentGesetzteYearMonths;
 
     public CSVExporter(Bilanz bilanz) {
         this.bilanz = bilanz;
         this.calculator = new Calculator(bilanz);
-        this.gesetzteYearMonths = bilanz.getYearMonthsSorted();
+        this.allGesetzteYearMonths = bilanz.getYearMonthsSorted();
     }
 
-    public void export(String outputFileName) throws IOException {
-        CSVWriter writer = new CSVWriter(
-                new FileWriter(outputFileName),
-                CSVWriter.DEFAULT_SEPARATOR,
-                CSVWriter.DEFAULT_QUOTE_CHARACTER,
-                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
-                CSVWriter.DEFAULT_LINE_END
-        );
+    public void export(String outputFileName) {
+        allGesetzteYearMonths.stream()
+                .map(YearMonth::getYear)
+                .forEach(year -> {
+                    try (FileWriter fileWriter = new FileWriter(FILE_NAME_FORMAT.formatted(outputFileName, year))) {
+                        currentGesetzteYearMonths = allGesetzteYearMonths.stream()
+                                .filter(yearMonth -> yearMonth.getYear() == year)
+                                .toList();
+                        CSVWriter writer = new CSVWriter(
+                                fileWriter,
+                                CSVWriter.DEFAULT_SEPARATOR,
+                                CSVWriter.DEFAULT_QUOTE_CHARACTER,
+                                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                                CSVWriter.DEFAULT_LINE_END
+                        );
 
-        writeHeader(writer);
-        writeCategories(writer);
-        writeCalculations(writer);
-
-        writer.close();
+                        writeHeader(writer);
+                        writeCategories(writer);
+                        writeCalculations(writer);
+                    } catch (IOException e) {
+                        throw new FinanzConverterException(e);
+                    }
+                });
     }
 
     // "Kategorie","Januar","Februar","März" ...
@@ -69,7 +81,7 @@ public class CSVExporter {
         List<String> rows = new ArrayList<>();
         rows.add("Kategorie");
 
-        gesetzteYearMonths.stream()
+        currentGesetzteYearMonths.stream()
                 .map(YearMonth::getMonth)
                 .map(m -> m.getDisplayName(TextStyle.FULL, Locale.GERMAN))
                 .forEach(rows::add);
@@ -79,8 +91,6 @@ public class CSVExporter {
     }
 
     private void writeCategories(CSVWriter writer) {
-        List<YearMonth> gesetzteYearMonths = bilanz.getYearMonthsSorted();
-
         for (ESuperCategoryType superCategoryType : ESuperCategoryType.values()) {
             // SuperCategory als Überschrift: "Einkommen", "Wohnen", "Versicherungen" ...
             writer.writeNext(new String[]{superCategoryType.getName()});
@@ -92,7 +102,7 @@ public class CSVExporter {
                     .toList();
             for (ECategoryType categoryType : categoryTypes) {
                 List<Double> values = new ArrayList<>();
-                for (YearMonth yearMonth : gesetzteYearMonths) {
+                for (YearMonth yearMonth : currentGesetzteYearMonths) {
                     values.add(bilanz.getCategoryValue(categoryType, yearMonth));
                 }
 
@@ -135,7 +145,7 @@ public class CSVExporter {
         for (EAvailableCashTyp availableCashTyp : availableCashTyps) {
             List<String> row = new ArrayList<>();
             row.add(availableCashTyp.getBezeichnung());
-            for (YearMonth yearMonth : gesetzteYearMonths) {
+            for (YearMonth yearMonth : currentGesetzteYearMonths) {
                 Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
                 availableCashOptional.ifPresent(availableCash -> row.add(this.formatBetrag(availableCash.getBetrag())));
             }
@@ -145,7 +155,7 @@ public class CSVExporter {
         for (ECalculationType type : calculationTypes) {
             List<String> row = new ArrayList<>();
             row.add(type.getName());
-            for (YearMonth yearMonth : gesetzteYearMonths) {
+            for (YearMonth yearMonth : currentGesetzteYearMonths) {
                 row.add(formatBetrag(calculator.getCalculationValue(type, yearMonth)));
             }
             writer.writeNext(row.toArray(String[]::new));
@@ -162,7 +172,7 @@ public class CSVExporter {
     }
 
     private boolean differenceExists() {
-        return (int) gesetzteYearMonths.stream()
+        return (int) currentGesetzteYearMonths.stream()
                 .mapToDouble(yearMonth -> DIFFERENZ.stream()
                         .mapToDouble(type -> calculator.getCalculationValue(type, yearMonth))
                         .sum())
