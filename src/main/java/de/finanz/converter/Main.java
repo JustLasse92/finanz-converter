@@ -9,15 +9,9 @@ import java.io.IOException;
 
 public class Main {
 
-
-    public static final String OUTPUT_FILE_NAME = "bilanz";
-
     public static void main(String[] args) throws IOException {
-
-
         Bilanz bilanz = new Bilanz();
         CSVExporter csvExporter = new CSVExporter(bilanz);
-        csvExporter.export(OUTPUT_FILE_NAME);
-
+        csvExporter.export();
     }
 }

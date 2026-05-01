@@ -6,8 +6,7 @@ import de.finanz.converter.categorie.Categorie;
 import de.finanz.converter.categorie.ECategoryType;
 import de.finanz.converter.exception.FinanzConverterException;
 import de.finanz.converter.io.CSVFinanzReader;
-import de.finanz.converter.stocks.SharedHeld;
-import de.finanz.converter.stocks.StockPrice;
+import de.finanz.converter.stocks.Stock;
 import de.finanz.converter.transaction.Transaction;
 import de.finanz.converter.transaction.TransactionHelper;
 import lombok.Getter;
@@ -23,8 +22,7 @@ import java.util.stream.Collectors;
 
 @Getter
 public class Bilanz {
-    private final List<SharedHeld> sharedHelds;
-    private final List<StockPrice> stockPrices;
+    private final List<Stock> stocks;
     private final List<Transaction> allTransactions;
     private final List<AvailableCash> availableCashes;
     private final Map<ECategoryType, Categorie<ECategoryType>> categories;
@@ -35,8 +33,7 @@ public class Bilanz {
 
         TransactionHelper transactionHelper = new TransactionHelper();
         this.categories = new HashMap<>();
-        this.stockPrices = csvFinanzReader.readAllStockPrices();
-        this.sharedHelds = csvFinanzReader.readAllSharedHelds();
+        this.stocks = csvFinanzReader.readAllStocks();
         this.availableCashes = csvFinanzReader.readAvailableCash();
         this.allTransactions = csvFinanzReader.readTransactions();
         transactionHelper.replaceWithAdditionalTransactionContext(allTransactions);

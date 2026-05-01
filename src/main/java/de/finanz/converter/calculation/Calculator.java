@@ -7,8 +7,7 @@ import de.finanz.converter.categorie.Categorie;
 import de.finanz.converter.categorie.ECategoryType;
 import de.finanz.converter.categorie.ESuperCategoryType;
 import de.finanz.converter.exception.FinanzConverterException;
-import de.finanz.converter.stocks.SharedHeld;
-import de.finanz.converter.stocks.StockPrice;
+import de.finanz.converter.stocks.Stock;
 import de.finanz.converter.transaction.Transaction;
 
 import java.time.Month;
@@ -39,8 +38,7 @@ public class Calculator {
         calculations = new HashMap<>();
 
         Collection<Categorie<ECategoryType>> categories = bilanz.getAllCategories();
-        List<StockPrice> stockPrices = bilanz.getStockPrices();
-        List<SharedHeld> sharedHelds = bilanz.getSharedHelds();
+        List<Stock> stocks = bilanz.getStocks();
         List<YearMonth> yearMonthsSorted = bilanz.getYearMonthsSorted();
         List<AvailableCash> availableCashes = bilanz.getAvailableCashes();
         List<Transaction> allTransactions = bilanz.getAllTransactions();
@@ -52,7 +50,7 @@ public class Calculator {
         calculateAusgabenGesamt(yearMonthsSorted);
         calculateMonatlicherUeberschuss(categories, yearMonthsSorted);
         calculateSparrateGesamt(categories, yearMonthsSorted);
-        calculateStocks(sharedHelds, stockPrices);
+        calculateStocks(stocks);
         calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
         calculateAuslagen(categories, yearMonthsSorted);
         calculateCash(availableCashes);
@@ -179,21 +177,12 @@ public class Calculator {
                 .forEach(((yearMonth, aDouble) -> addCalculation(ECalculationType.CASH, yearMonth, aDouble)));
     }
 
-    private void calculateStocks(Collection<SharedHeld> sharedHelds, Collection<StockPrice> stockPrices) {
-        for (SharedHeld sharedHeld : sharedHelds) {
-            List<StockPrice> stockPricesZumSharedHeld = stockPrices.stream()
-                    .filter(stockPrice -> stockPrice.getName().equals(sharedHeld.getName())
-                            && stockPrice.getDatum().equals(sharedHeld.getDatum()))
-                    .toList();
-            if (stockPricesZumSharedHeld.size() != 1) {
-                throw new FinanzConverterException("Es wurde erwartet einen Aktienpreis zu finden. Es wurden jedoch "
-                        + stockPricesZumSharedHeld.size() + " gefunden zur gehaltenen Aktie: " + sharedHeld);
-            }
-
-            Double gehalteneAnteile = sharedHeld.getGehalteneAnteile();
-            Double kurs = stockPricesZumSharedHeld.getFirst().getKurs();
+    private void calculateStocks(List<Stock> stocks) {
+        for (Stock stock : stocks) {
+            Double gehalteneAnteile = stock.getGehalteneAnteile();
+            Double kurs = stock.getKurs();
             Double stockValue = gehalteneAnteile * kurs;
-            addCalculation(ECalculationType.findByName(sharedHeld.getName()), sharedHeld.getYearMonth(), stockValue);
+            addCalculation(ECalculationType.findByName(stock.getName()), stock.getYearMonth(), stockValue);
         }
     }
 

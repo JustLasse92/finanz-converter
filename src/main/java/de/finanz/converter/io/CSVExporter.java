@@ -12,6 +12,7 @@ import de.finanz.converter.exception.FinanzConverterException;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -22,9 +23,10 @@ import java.util.Optional;
 
 public class CSVExporter {
 
-    public static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
+    private static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
             , ECalculationType.GIROKONTO_DIFFERENZ);
-    public static final String FILE_NAME_FORMAT = "%s_%d.csv";
+    private static final Path OUTPUT_PATH = Path.of(System.getenv("OUTPUT_PATH"));
+    private static final String FILE_NAME_FORMAT = OUTPUT_PATH + "/bilanz_%d.csv";
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.AUSGABEN_VARIABEL,
@@ -51,11 +53,12 @@ public class CSVExporter {
         this.allGesetzteYearMonths = bilanz.getYearMonthsSorted();
     }
 
-    public void export(String outputFileName) {
+    public void export() {
         allGesetzteYearMonths.stream()
                 .map(YearMonth::getYear)
                 .forEach(year -> {
-                    try (FileWriter fileWriter = new FileWriter(FILE_NAME_FORMAT.formatted(outputFileName, year))) {
+                    try (FileWriter fileWriter =
+                                 new FileWriter(FILE_NAME_FORMAT.formatted(year))) {
                         currentGesetzteYearMonths = allGesetzteYearMonths.stream()
                                 .filter(yearMonth -> yearMonth.getYear() == year)
                                 .toList();
@@ -126,11 +129,6 @@ public class CSVExporter {
     }
 
 
-    private void writeAvailableCashesOfTypes(CSVWriter writer, String header,
-                                             List<EAvailableCashTyp> availableCashTyps) {
-        writeCalculationsOfTypes(writer, header, List.of(), availableCashTyps);
-    }
-
     private void writeCalculationsOfTypes(CSVWriter writer, String header,
                                           List<ECalculationType> calculationTypes) {
         writeCalculationsOfTypes(writer, header, calculationTypes, List.of());
@@ -147,7 +145,8 @@ public class CSVExporter {
             row.add(availableCashTyp.getBezeichnung());
             for (YearMonth yearMonth : currentGesetzteYearMonths) {
                 Optional<AvailableCash> availableCashOptional = bilanz.getAvailableCashesInYearMonths(availableCashTyp, yearMonth);
-                availableCashOptional.ifPresent(availableCash -> row.add(this.formatBetrag(availableCash.getBetrag())));
+                double betrag = availableCashOptional.isPresent() ? availableCashOptional.get().getBetrag() : 0.0;
+                row.add(this.formatBetrag(betrag));
             }
             writer.writeNext(row.toArray(String[]::new));
         }

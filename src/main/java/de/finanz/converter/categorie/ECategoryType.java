@@ -132,7 +132,8 @@ public enum ECategoryType {
                         "LECROBAG.BREMEN.HBF.TU/BREMEN", "SANIFAIR", "STADTBAECKEREI", "BACKSTUBE", "Materna" +
                                 ".Information/Dortmund", "Asiagourmet/Dortmund", "Good.Quatsch", "Backerei", "SMOKE" +
                                 ".KIOSK/BREMERHAVEN", "Haferkamp", "Restaurant", "HBF.Saarbruecken", "BackWerk",
-                        "Cafe.Extrablatt", "GASTSTAETTE.SCHMIEDING", "KAGI.BAR", "RONA.COCKTAILBAR", "Pizzeria", "Alexandra.Ausb/Bremerhaven")
+                        "Cafe.Extrablatt", "GASTSTAETTE.SCHMIEDING", "KAGI.BAR", "RONA.COCKTAILBAR", "Pizzeria",
+                        "Alexandra.Ausb/Bremerhaven", "KiK.Fil..8322/Bremerhaven", "LE.CROBAG.SHOP")
                         || containsAnyVerwendungszweck(transaction, "Pizzamann", "Ihr Einkauf bei Kevin Ricke", "Sushi");
             }
             return false;
@@ -141,7 +142,8 @@ public enum ECategoryType {
     BARGELDABHEBUNGEN("Bargeldabhebungen", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
-            return (containsAnyEmpfaenger(transaction, "Kreissparkasse.Diepholz/BASSUM", "SPARKASSE.BREMEN", "SPARKASSE.DORTMUND/SPK.DO.91")
+            return (containsAnyEmpfaenger(transaction, "Kreissparkasse.Diepholz/BASSUM", "SPARKASSE.BREMEN",
+                    "SPARKASSE.DORTMUND/SPK.DO.91", "Sparda.Bank")
                     && isUmsatztyp(transaction, EUmsatztyp.AUSGANG));
         }
     },
@@ -255,12 +257,9 @@ public enum ECategoryType {
     KLEIDUNG("Kleidung", ESuperCategoryType.LEBENSHALTUNG) {
         @Override
         public boolean matches(Transaction transaction) {
-            if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyEmpfaenger(transaction, "MODEHAUS", "Adler.Modemarkte", "DEICHMANN", "C + A Mode " +
-                        "GmbH", "TJX.Europe.Ltd..Co.KG./Bremen")
-                        || containsAnyVerwendungszweck(transaction, "Tchibo Klamotten", "Hausschuhe");
-            }
-            return false;
+            return containsAnyEmpfaenger(transaction, "MODEHAUS", "Adler.Modemarkte", "DEICHMANN", "C + A Mode " +
+                    "GmbH", "TJX.Europe.Ltd..Co.KG./Bremen", "Tinas Restposte")
+                    || containsAnyVerwendungszweck(transaction, "Tchibo Klamotten", "Hausschuhe", "CA Online Shop");
         }
     },
     LEBENSMITTEL("Lebensmittel", ESuperCategoryType.LEBENSHALTUNG) {

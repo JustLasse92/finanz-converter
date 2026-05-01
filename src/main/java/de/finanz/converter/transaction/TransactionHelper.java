@@ -65,7 +65,7 @@ public class TransactionHelper {
                     continue outer;
                 }
             }
-            throw new FinanzConverterException("Konnte keine passende Transaction finden zu: " + transactionWithAdditionalContext);
+            throw new FinanzConverterException("Konnte zum TransactionContext kein passendes Gegenstück finden: " + transactionWithAdditionalContext);
         }
     }
 

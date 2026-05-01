@@ -4,8 +4,7 @@ import com.opencsv.CSVReader;
 import com.opencsv.bean.CsvToBeanBuilder;
 import com.opencsv.exceptions.CsvException;
 import de.finanz.converter.cash.AvailableCash;
-import de.finanz.converter.stocks.SharedHeld;
-import de.finanz.converter.stocks.StockPrice;
+import de.finanz.converter.stocks.Stock;
 import de.finanz.converter.transaction.Transaction;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.input.BOMInputStream;
@@ -26,9 +25,7 @@ import java.util.stream.Stream;
 public class CSVFinanzReader {
 
     private static final Path TRANSACTIONS_ROOT_PATH = Path.of(System.getenv("TRANSACTIONS_ROOT_PATH"));
-    private static final Path STOCK_PRICE_PATH = resolvePath("STOCK_PRICE_FILE_PATH");
-    private static final Path EXPENSES_TRANSACTIONS_FILE_PATH = resolvePath("EXPENSES_TRANSACTIONS_FILE_PATH");
-    private static final Path SHARED_HELD_PATH = resolvePath("SHARED_HELD_FILE_PATH");
+    private static final Path STOCKS_PATH = resolvePath("STOCKS_FILE_PATH");
     private static final Path AVAILABLE_CASH_PATH = resolvePath("AVAILABLE_CASH_FILE_PATH");
     private static final Path TRANSACTIONS_SINGLE_2023_PATH = resolvePath("TRANSACTIONS_SINGLE_2023_FILE_PATH");
     private static final Path TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH = resolvePath("TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH");
@@ -61,14 +58,9 @@ public class CSVFinanzReader {
         return readCSV(TRANSACTIONS_ADDITIONAL_CONTEXT_FILE_PATH, Transaction.class);
     }
 
-    public List<SharedHeld> readAllSharedHelds() throws IOException {
-        assert Files.isRegularFile(SHARED_HELD_PATH);
-        return readCSV(SHARED_HELD_PATH, SharedHeld.class);
-    }
-
-    public List<StockPrice> readAllStockPrices() throws IOException {
-        assert Files.isRegularFile(STOCK_PRICE_PATH);
-        return readCSV(STOCK_PRICE_PATH, StockPrice.class);
+    public List<Stock> readAllStocks() throws IOException {
+        assert Files.isRegularFile(STOCKS_PATH);
+        return readCSV(STOCKS_PATH, Stock.class);
     }
 
     private <T> List<T> readCSV(Path path, Class<T> type) throws IOException {
