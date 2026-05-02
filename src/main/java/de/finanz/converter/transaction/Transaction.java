@@ -11,7 +11,6 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
-import java.util.Objects;
 
 @Data
 public class Transaction {
@@ -57,9 +56,9 @@ public class Transaction {
     @CsvNumber(value = "#.##")
     private Double betrag;
 
-    @CsvBindByName(column = "Additional Buchungsdatum")
+    @CsvBindByName(column = "Additional Order Ausführungsdatum")
     @CsvDate("dd.MM.yy")
-    private Calendar additionalBuchungsdatum;
+    private Calendar additionalOrderAusfuehrungsdatum;
 
     @CsvBindByName(column = "Additional Category")
     private EAdditionalCategory additionalCategory;
@@ -79,7 +78,7 @@ public class Transaction {
                 "\nkundenreferenz='" + kundenreferenz + '\'' +
                 "\numsatztyp=" + umsatztyp +
                 "\nbetrag=" + betrag +
-                "\nadditionalBuchungsdatum=" + additionalBuchungsdatum +
+                "\nadditionalBuchungsdatum=" + additionalOrderAusfuehrungsdatum +
                 "\nadditionalCategory=" + additionalCategory +
                 '}';
     }
@@ -104,8 +103,16 @@ public class Transaction {
                 && (transaction.getBetrag() == null || this.getBetrag().equals(transaction.getBetrag()));
     }
 
+    public YearMonth getYearMonthOfAdditionalOrderAusfuehrungsdatum() {
+        if (additionalOrderAusfuehrungsdatum == null) {
+            return null;
+        }
+        return YearMonth.of(additionalOrderAusfuehrungsdatum.get(Calendar.YEAR),
+                Month.of(additionalOrderAusfuehrungsdatum.get(Calendar.MONTH) + 1));
+    }
+
     public YearMonth getYearMonthOfBuchungsdatum() {
-        Calendar calendar = Objects.requireNonNullElse(getAdditionalBuchungsdatum(), getBuchungsdatum());
+        Calendar calendar = getBuchungsdatum();
         return YearMonth.of(calendar.get(Calendar.YEAR),
                 Month.of(calendar.get(Calendar.MONTH) + 1));
     }

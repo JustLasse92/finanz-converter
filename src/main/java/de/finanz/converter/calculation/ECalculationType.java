@@ -25,6 +25,7 @@ public enum ECalculationType {
     BITCOIN("Bitcoin"),
     GIROKONTO_IST("Girokonto"),
     GIROKONTO_DIFFERENZ("Girokonto Differenz"),
+    VERRECHNUNGSKONTO("Verrechnungskonto"),
     CASH_DIFFERENZ("Cash Differenz");
     private String name;
 

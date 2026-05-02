@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class Calculator {
-    private static final List<EAvailableCashTyp> CASH_TYPS = List.of(EAvailableCashTyp.BARGELD, EAvailableCashTyp.TAGESGELDKONTO, EAvailableCashTyp.VERRECHNUNGSKONTO);
+    private static final List<EAvailableCashTyp> CASH_TYPS = List.of(EAvailableCashTyp.BARGELD, EAvailableCashTyp.TAGESGELDKONTO);
     private static final Set<ESuperCategoryType> CATEGORY_TYPES_AUSGABEN_VARIABEL = Set.of(
             ESuperCategoryType.LEBENSHALTUNG,
             ESuperCategoryType.MOBILITAET,
@@ -43,6 +43,7 @@ public class Calculator {
         List<AvailableCash> availableCashes = bilanz.getAvailableCashes();
         List<Transaction> allTransactions = bilanz.getAllTransactions();
 
+        calculateVerrechnungskonto(allTransactions, yearMonthsSorted);
         calculateBargeldausgaben(availableCashes, categories);
         calculateEinnahmenGesamt(categories, yearMonthsSorted);
         calculateAusgabenFix(categories, yearMonthsSorted);
@@ -143,6 +144,24 @@ public class Calculator {
         });
     }
 
+    private void calculateVerrechnungskonto(List<Transaction> allTransactions, List<YearMonth> yearMonths) {
+        for (YearMonth yearMonth : yearMonths) {
+            double sum = allTransactions.stream()
+                    .filter(transaction -> transaction.getAdditionalOrderAusfuehrungsdatum() != null)
+                    .filter(transaction -> transaction.getYearMonthOfBuchungsdatum().equals(yearMonth))
+                    .filter(transaction -> {
+                        // Wenn die Order nicht im selben Monat ausgeführt wird, liegt das Geld solange auf dem Verrechnungskonto
+                        return transaction.getYearMonthOfAdditionalOrderAusfuehrungsdatum().isAfter(transaction.getYearMonthOfBuchungsdatum());
+                    })
+                    .mapToDouble(Transaction::getBetrag)
+                    .map(Math::abs)
+                    .sum();
+
+            addCalculation(ECalculationType.VERRECHNUNGSKONTO, yearMonth, sum);
+        }
+
+    }
+
     private void calculateGirokontoIst(List<Transaction> allTransactions, final Double umsatz2023) {
         addCalculation(ECalculationType.GIROKONTO_IST, YearMonth.of(2023, Month.DECEMBER), umsatz2023);
 
@@ -182,7 +201,7 @@ public class Calculator {
             Double gehalteneAnteile = stock.getGehalteneAnteile();
             Double kurs = stock.getKurs();
             Double stockValue = gehalteneAnteile * kurs;
-            addCalculation(ECalculationType.findByName(stock.getName()), stock.getYearMonth(), stockValue);
+            addCalculation(ECalculationType.findByName(stock.getName()), stock.getYearMonthOfDatum(), stockValue);
         }
     }
 
@@ -216,6 +235,7 @@ public class Calculator {
             double bilanz = getCalculationValue(ECalculationType.CASH, yearMonth)
                     + getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, yearMonth)
                     + getCalculationValue(ECalculationType.ISHARES_NASDAQ_100, yearMonth)
+                    + getCalculationValue(ECalculationType.VERRECHNUNGSKONTO, yearMonth)
                     + getCalculationValue(ECalculationType.BITCOIN, yearMonth);
             addCalculation(ECalculationType.BILANZ_MONAT, yearMonth, bilanz);
         }

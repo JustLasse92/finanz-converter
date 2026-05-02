@@ -8,7 +8,6 @@ import lombok.Getter;
 public enum EAvailableCashTyp {
     BARGELD("Bargeld"),
     TAGESGELDKONTO("Tagesgeldkonto"),
-    VERRECHNUNGSKONTO("Verrechnungskonto"),
     AKTIEN_VL("Aktien VL");
     private String bezeichnung;
 }

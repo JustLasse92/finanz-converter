@@ -9,10 +9,14 @@ import de.finanz.converter.cash.EAvailableCashTyp;
 import de.finanz.converter.categorie.ECategoryType;
 import de.finanz.converter.categorie.ESuperCategoryType;
 import de.finanz.converter.exception.FinanzConverterException;
+import de.finanz.converter.stocks.Stock;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -20,13 +24,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CSVExporter {
 
+    public static final String FILE_NAME_FORMAT = "bilanz_%d.csv";
     private static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
             , ECalculationType.GIROKONTO_DIFFERENZ);
     private static final Path OUTPUT_PATH = Path.of(System.getenv("OUTPUT_PATH"));
-    private static final String FILE_NAME_FORMAT = OUTPUT_PATH + "/bilanz_%d.csv";
+    //    private static final String FILE_NAME_FORMAT = OUTPUT_PATH + FILE_NAME;
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.AUSGABEN_VARIABEL,
@@ -35,10 +42,10 @@ public class CSVExporter {
     private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARRATE_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_KONTOSTAENDE =
             List.of(ECalculationType.GIROKONTO_IST, ECalculationType.CASH);
-    private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO,
-            EAvailableCashTyp.VERRECHNUNGSKONTO, EAvailableCashTyp.BARGELD);
+    private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO, EAvailableCashTyp.BARGELD);
     private static final List<ECalculationType> CALCULATION_TYPE_WERTPAPIERE =
-            List.of(ECalculationType.VANGUARD_FTSE_ALL_WORLD, ECalculationType.ISHARES_NASDAQ_100,
+            List.of(ECalculationType.VERRECHNUNGSKONTO, ECalculationType.VANGUARD_FTSE_ALL_WORLD,
+                    ECalculationType.ISHARES_NASDAQ_100,
                     ECalculationType.BITCOIN);
     private static final List<EAvailableCashTyp> AVAILABLE_CASH_WERTPAPIERE = List.of(EAvailableCashTyp.AKTIEN_VL);
     private static final List<ECalculationType> CALCULATION_TYPE_BILANZ = List.of(ECalculationType.BILANZ_MONAT);
@@ -56,9 +63,11 @@ public class CSVExporter {
     public void export() {
         allGesetzteYearMonths.stream()
                 .map(YearMonth::getYear)
+                .distinct()
                 .forEach(year -> {
+                    String fileName = FILE_NAME_FORMAT.formatted(year);
                     try (FileWriter fileWriter =
-                                 new FileWriter(FILE_NAME_FORMAT.formatted(year))) {
+                                 new FileWriter("./" + fileName)) {
                         currentGesetzteYearMonths = allGesetzteYearMonths.stream()
                                 .filter(yearMonth -> yearMonth.getYear() == year)
                                 .toList();
@@ -73,6 +82,9 @@ public class CSVExporter {
                         writeHeader(writer);
                         writeCategories(writer);
                         writeCalculations(writer);
+                        writeKurse(writer);
+
+                        Files.copy(Path.of(fileName), Path.of(OUTPUT_PATH + File.separator + fileName), StandardCopyOption.REPLACE_EXISTING);
                     } catch (IOException e) {
                         throw new FinanzConverterException(e);
                     }
@@ -124,8 +136,35 @@ public class CSVExporter {
         }
     }
 
+    private void writeKurse(CSVWriter writer) {
+        writer.writeNext(new String[0]); //Leerzeile
+        writer.writeNext(new String[0]); //Leerzeile
+        writer.writeNext(new String[]{"Kurse"});
+        Set<String> stockNames = bilanz.getStocks().stream().map(Stock::getName).collect(Collectors.toSet());
+        for (String stockName : stockNames) {
+            List<String> rows = new ArrayList<>();
+            rows.add(stockName);
+            for (YearMonth yearMonth : currentGesetzteYearMonths) {
+                Optional<Double> kursOptional = bilanz.getStocks().stream()
+                        .filter(stock -> stock.getName().equals(stockName))
+                        .filter(stock -> stock.getYearMonthOfDatum().equals(yearMonth))
+                        .map(Stock::getKurs)
+                        .findAny();
+                if (kursOptional.isEmpty()) {
+                    continue;
+                }
+
+                rows.add(formatBetrag(kursOptional.get()));
+            }
+
+
+            writer.writeNext(rows.toArray(String[]::new));
+        }
+        writer.writeNext(new String[0]); //Leerzeile
+    }
+
     private String formatBetrag(Double betrag) {
-        return String.format("%.2f", betrag) + " €";
+        return String.format("%.2f", betrag);
     }
 
 

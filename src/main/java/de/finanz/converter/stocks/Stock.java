@@ -46,7 +46,7 @@ public class Stock {
         return Month.of(getDatum().get(Calendar.MONTH) + 1);
     }
 
-    public YearMonth getYearMonth() {
+    public YearMonth getYearMonthOfDatum() {
         return YearMonth.of(getDatum().get(Calendar.YEAR),
                 Month.of(getDatum().get(Calendar.MONTH) + 1));
     }
