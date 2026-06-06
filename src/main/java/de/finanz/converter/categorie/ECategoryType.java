@@ -72,7 +72,7 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyEmpfaenger(transaction, "INTERCITYHOTEL");
+                return containsAnyEmpfaenger(transaction, "INTERCITYHOTEL", "ALICANTE") || containsAnyVerwendungszweck(transaction, "Ryanair", "Booking.com");
             }
             return false;
         }
@@ -90,7 +90,7 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyVerwendungszweck(transaction, "1049524567778/PP.4622.PP");
+                return containsAnyVerwendungszweck(transaction, "1049524567778/PP.4622.PP") || containsAnyEmpfaenger(transaction, "NANU.NANA");
             }
             return false;
         }
@@ -99,7 +99,8 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyEmpfaenger(transaction, "AUSSICHTSPLATTFORM");
+                return containsAnyEmpfaenger(transaction, "AUSSICHTSPLATTFORM", "SCHAUBURG.KINO")
+                        || containsAnyVerwendungszweck(transaction, "kinoheld GmbH", "Gilde-Festhalle");
             }
             return false;
         }
@@ -123,6 +124,12 @@ public enum ECategoryType {
             return false;
         }
     },
+    FRISEUR("Friseur", ESuperCategoryType.LEBENSHALTUNG) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            return containsAnyEmpfaenger(transaction, "SPIEGLEIN.SPIEG");
+        }
+    },
     AUSWAERTS_ESSEN_TRINKEN("Auswärts Essen/Trinken", ESuperCategoryType.ENTERTAINMENT) {
         @Override
         public boolean matches(Transaction transaction) {
@@ -133,7 +140,8 @@ public enum ECategoryType {
                                 ".Information/Dortmund", "Asiagourmet/Dortmund", "Good.Quatsch", "Backerei", "SMOKE" +
                                 ".KIOSK/BREMERHAVEN", "Haferkamp", "Restaurant", "HBF.Saarbruecken", "BackWerk",
                         "Cafe.Extrablatt", "GASTSTAETTE.SCHMIEDING", "KAGI.BAR", "RONA.COCKTAILBAR", "Pizzeria",
-                        "Alexandra.Ausb/Bremerhaven", "KiK.Fil..8322/Bremerhaven", "LE.CROBAG.SHOP")
+                        "Alexandra.Ausb/Bremerhaven", "KiK.Fil..8322/Bremerhaven", "LE.CROBAG.SHOP", "BACKHAUS",
+                        "Imbiss.CafeBistr", "Ditsch", "Mueller...Egerer", "YORMAS.AG")
                         || containsAnyVerwendungszweck(transaction, "Pizzamann", "Ihr Einkauf bei Kevin Ricke", "Sushi");
             }
             return false;
@@ -258,7 +266,7 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             return containsAnyEmpfaenger(transaction, "MODEHAUS", "Adler.Modemarkte", "DEICHMANN", "C + A Mode " +
-                    "GmbH", "TJX.Europe.Ltd..Co.KG./Bremen", "Tinas Restposte")
+                    "GmbH", "TJX.Europe.Ltd..Co.KG./Bremen", "Tinas Restposte", "Tinas.Restposte")
                     || containsAnyVerwendungszweck(transaction, "Tchibo Klamotten", "Hausschuhe", "CA Online Shop");
         }
     },
@@ -282,22 +290,24 @@ public enum ECategoryType {
     ONLINE_KAEUFE("Online Käufe", ESuperCategoryType.LEBENSHALTUNG) {
         @Override
         public boolean matches(Transaction transaction) {
-            if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyEmpfaenger(transaction, "Kleinanzeigen", "AMAZON", "Wigento GmbH", "FOTOSERVICE")
-                        || containsAnyVerwendungszweck(transaction, "Kleinanzeigen Schiffe versenken", "1046755274969" +
-                                "/PP.4622.PP/. , Ihr Einkauf bei", "1046753926122/PP.4622.PP", "1048948119613/PP.4622.PP",
-                        "1048122384878/PP.4622.PP", "1048095263481/PP.4622.PP/", "1047868447652/PP.4622.PP/", "1047548680816/PP.4622.PP/");
-            }
-            return false;
+            return containsAnyEmpfaenger(transaction, "Kleinanzeigen", "AMAZON", "Wigento GmbH", "FOTOSERVICE", "rebuy recommerce")
+                    || containsAnyVerwendungszweck(transaction, "Kleinanzeigen Schiffe versenken", "1046755274969" +
+                            "/PP.4622.PP/. , Ihr Einkauf bei", "1046753926122/PP.4622.PP", "1048948119613/PP.4622.PP",
+                    "1048122384878/PP.4622.PP", "1048095263481/PP.4622.PP/", "1047868447652/PP.4622.PP/", "1047548680816/PP.4622.PP/")
+                    || containsAnySender(transaction, "rebuy recommerce Gmb");
         }
     },
     SONSTIGE_UNTERHALTUNG("Sonstiges", ESuperCategoryType.ENTERTAINMENT) {
         @Override
         public boolean matches(Transaction transaction) {
-            if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyVerwendungszweck(transaction, "Amazon Handyhülle", "181554, JustLasse, Bremen", "Ihr Einkauf bei GitHub, Inc");
-            }
-            return false;
+            return containsAnyVerwendungszweck(transaction, "Amazon Handyhülle", "181554, JustLasse, Bremen",
+                    "Ihr Einkauf bei GitHub, Inc", "197034, JustLasse");
+        }
+    },
+    SONSTIGE_LEBENSHALTUNG("Sonstiges", ESuperCategoryType.LEBENSHALTUNG) {
+        @Override
+        public boolean matches(Transaction transaction) {
+            return containsAnyVerwendungszweck(transaction, "Kaputtes Einmachglas");
         }
     },
     GEHALT("Gehalt", ESuperCategoryType.EINKOMMEN) {
