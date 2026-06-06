@@ -32,6 +32,12 @@
             <version>1.18.44</version>
             <scope>compile</scope>
         </dependency>
+        <!--        https://github.com/librepdf/openpdf-->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>3.0.4</version>
+        </dependency>
     </dependencies>
 
 </project>

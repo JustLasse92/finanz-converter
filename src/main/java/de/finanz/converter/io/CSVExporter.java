@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 public class CSVExporter {
 
-    public static final String FILE_NAME_FORMAT = "bilanz_%d.csv";
+    private static final String FILE_NAME_FORMAT = "bilanz_%d.csv";
     private static final List<ECalculationType> DIFFERENZ = List.of(ECalculationType.CASH_DIFFERENZ
             , ECalculationType.GIROKONTO_DIFFERENZ);
     private static final Path OUTPUT_PATH = Path.of(System.getenv("OUTPUT_PATH"));
