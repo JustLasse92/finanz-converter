@@ -10,6 +10,7 @@ import de.finanz.converter.categorie.ESuperCategoryType;
 import de.finanz.converter.exception.FinanzConverterException;
 import org.openpdf.text.Document;
 import org.openpdf.text.DocumentException;
+import org.openpdf.text.Element;
 import org.openpdf.text.Font;
 import org.openpdf.text.FontFactory;
 import org.openpdf.text.Phrase;
@@ -38,7 +39,7 @@ public class PDFExporter {
 
     public static final float[] COLUMN_DEFINITION_SIZE = new float[]{2.5F, 1F, 1.3F, 1F, 1F, 1F, 1F, 1F, 1F, 1.5F, 1.2F,
             1.5F, 1.5F};
-    public static final Color HEADER_BACKGROUND_COLOR = new Color(0, 110, 173);
+    public static final Color HEADER_BACKGROUND_COLOR = new Color(77, 107, 221);
     private static final Font FONT_HEADER = FontFactory.getFont("Verdana", 9, 1, Color.WHITE);
     private static final Font FONT_ROW_SUPER_CATEGORY = FontFactory.getFont("Verdana", 8, 1, Color.WHITE);
     private static final Font FONT_ROW_CATEGORY = FontFactory.getFont("Verdana", 8, 0);
@@ -66,6 +67,7 @@ public class PDFExporter {
     private final Calculator calculator;
     private final List<YearMonth> allGesetzteYearMonths;
     private int currentYear;
+    private boolean evenRowNumber = false; //für wechselnde Hintergrundfarben
 
     public PDFExporter(Bilanz bilanz) {
         this.bilanz = bilanz;
@@ -116,12 +118,12 @@ public class PDFExporter {
         table.setTotalWidth(width - 10);
         table.setLockedWidth(true);
 
-        writeHeader(table);
+        writeTableHeader(table);
         return table;
     }
 
     // "Kategorie","Januar","Februar","März" ...
-    private void writeHeader(PdfPTable table) {
+    private void writeTableHeader(PdfPTable table) {
         PdfPCell pdfPCell = new PdfPCell(new Phrase("Kategorie", FONT_HEADER));
         pdfPCell.setBackgroundColor(HEADER_BACKGROUND_COLOR);
         table.addCell(pdfPCell);
@@ -132,18 +134,8 @@ public class PDFExporter {
 
     private void writeCategories(PdfPTable table) {
         for (ESuperCategoryType superCategoryType : ESuperCategoryType.values()) {
-            // Die erste Gruppe soll direkt unter den Header sein
-            if (table.getRows().size() != 1) {
-                addEmptyRow(table);
-            }
-
             // SuperCategory als Überschrift: "Einkommen", "Wohnen", "Versicherungen" ...
-            addCell(table, superCategoryType.getName(), FONT_ROW_SUPER_CATEGORY, HEADER_BACKGROUND_COLOR);
-
-            // Zeilen nach der SuperCategory bleiben leer
-            PdfPCell pdfPCell = new PdfPCell();
-            pdfPCell.setColspan(COLUMN_DEFINITION_SIZE.length - 1);
-            table.addCell(pdfPCell);
+            writeGroupHeader(table, superCategoryType.getName());
 
             // Alle Kategorien der jeweiligen Superkategorie: Möbel/Einrichtung", "Kleidung", ...
             List<ECategoryType> categoryTypes = Arrays.stream(ECategoryType.values())
@@ -160,12 +152,30 @@ public class PDFExporter {
                     continue;
                 }
 
-                table.addCell(new Phrase(categoryType.getName(), FONT_ROW_CATEGORY));
+                evenRowNumber = !evenRowNumber;
+                this.addCell(table, categoryType.getName(), FONT_ROW_CATEGORY);
                 values.stream().map(this::formatBetrag)
-                        .map(betrag -> new Phrase(betrag, FONT_ROW_BETRAG))
-                        .forEach(table::addCell);
+//                        .map(betrag -> new Phrase(betrag, FONT_ROW_BETRAG))
+                        .forEach(s -> this.addCell(table, s, FONT_ROW_BETRAG));
             }
         }
+    }
+
+    private void writeGroupHeader(PdfPTable table, String cellContent) {
+        // Die erste Gruppe soll direkt unter den Header sein
+        if (table.getRows().size() != 1) {
+            addEmptyRow(table);
+        }
+
+        addCell(table, cellContent, FONT_ROW_SUPER_CATEGORY, HEADER_BACKGROUND_COLOR);
+
+        // Zeilen nach der SuperCategory bleiben leer
+        PdfPCell pdfPCell = new PdfPCell();
+        pdfPCell.setColspan(COLUMN_DEFINITION_SIZE.length - 1);
+        pdfPCell.setBackgroundColor(HEADER_BACKGROUND_COLOR);
+        table.addCell(pdfPCell);
+
+        evenRowNumber = true;
     }
 
 
@@ -187,17 +197,10 @@ public class PDFExporter {
     private void writeCalculationsOfTypes(PdfPTable table, String header,
                                           List<ECalculationType> calculationTypes,
                                           List<EAvailableCashTyp> availableCashTyps) {
-        // Die erste Gruppe soll direkt unter den Header sein
-        if (table.getRows().size() != 1) {
-            addEmptyRow(table);
-        }
-        addCell(table, header, FONT_ROW_SUPER_CATEGORY);
-        // Zeilen nach dem Header bleiben leer
-        PdfPCell pdfPCell = new PdfPCell();
-        pdfPCell.setColspan(COLUMN_DEFINITION_SIZE.length - 1);
-        table.addCell(pdfPCell);
+        writeGroupHeader(table, header);
 
         for (EAvailableCashTyp availableCashTyp : availableCashTyps) {
+            evenRowNumber = !evenRowNumber;
             addCell(table, availableCashTyp.getBezeichnung(), FONT_ROW_CATEGORY);
             for (Month month : Month.values()) {
                 Optional<AvailableCash> availableCashOptional =
@@ -208,6 +211,7 @@ public class PDFExporter {
         }
 
         for (ECalculationType type : calculationTypes) {
+            evenRowNumber = !evenRowNumber;
             addCell(table, type.getName(), FONT_ROW_CATEGORY);
             for (Month month : Month.values()) {
                 addCell(table, formatBetrag(calculator.getCalculationValue(type, YearMonth.of(currentYear, month))), FONT_ROW_BETRAG);
@@ -242,14 +246,16 @@ public class PDFExporter {
         Phrase phrase = new Phrase(inhalt, font);
         PdfPCell pdfPCell = new PdfPCell(phrase);
         pdfPCell.setBackgroundColor(backgroundColor);
+        pdfPCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         table.addCell(pdfPCell);
     }
 
     private void addCell(PdfPTable table, String inhalt, Font font) {
-        addCell(table, inhalt, font, Color.WHITE);
+        Color backgroundColor = evenRowNumber ? new Color(194, 211, 255) : new Color(137, 163, 244);
+        addCell(table, inhalt, font, backgroundColor);
     }
 
     private String formatBetrag(Double betrag) {
-        return String.format("%.2f", betrag);
+        return String.format("%.0f €", betrag);
     }
 }
