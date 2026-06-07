@@ -164,9 +164,11 @@ public class Calculator {
 
     private void calculateGirokontoIst(List<Transaction> allTransactions, final Double umsatz2023) {
         addCalculation(ECalculationType.GIROKONTO_IST, YearMonth.of(2023, Month.DECEMBER), umsatz2023);
+        YearMonth now = YearMonth.now();
 
         List<YearMonth> allYearMonths = allTransactions.stream()
                 .map(Transaction::getYearMonthOfBuchungsdatum)
+                .filter(y -> y.getMonth().compareTo(now.getMonth()) < 0 || y.getYear() < now.getYear() )
                 .sorted()
                 .distinct()
                 .toList();

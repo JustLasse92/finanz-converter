@@ -13,13 +13,14 @@ import org.openpdf.text.DocumentException;
 import org.openpdf.text.Element;
 import org.openpdf.text.Font;
 import org.openpdf.text.FontFactory;
+import org.openpdf.text.PageSize;
 import org.openpdf.text.Phrase;
 import org.openpdf.text.Rectangle;
 import org.openpdf.text.pdf.PdfPCell;
 import org.openpdf.text.pdf.PdfPTable;
 import org.openpdf.text.pdf.PdfWriter;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -79,12 +80,11 @@ public class PDFExporter {
         allGesetzteYearMonths.stream()
                 .map(YearMonth::getYear)
                 .distinct()
-                .filter(year -> year == 2026) // TODO WIEDER LÖSCHEN
                 .forEach(year -> {
                     String fileName = FILE_NAME_FORMAT.formatted(year);
                     currentYear = year;
 
-                    try (Document document = new Document()) {
+                    try (Document document = new Document(PageSize.A4.rotate())) {
                         // Sobald das Document geschlossen wird, wird auch der Writer geschlossen
                         PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(fileName));
                         float width = document.getPageSize().getWidth();
@@ -134,8 +134,7 @@ public class PDFExporter {
 
     private void writeCategories(PdfPTable table) {
         for (ESuperCategoryType superCategoryType : ESuperCategoryType.values()) {
-            // SuperCategory als Überschrift: "Einkommen", "Wohnen", "Versicherungen" ...
-            writeGroupHeader(table, superCategoryType.getName());
+            boolean headerIsAdded = false;
 
             // Alle Kategorien der jeweiligen Superkategorie: Möbel/Einrichtung", "Kleidung", ...
             List<ECategoryType> categoryTypes = Arrays.stream(ECategoryType.values())
@@ -152,10 +151,16 @@ public class PDFExporter {
                     continue;
                 }
 
+                // Kategorie wird nur geschrieben, wenn mindestens eine Zeile vorhanden ist
+                if (!headerIsAdded) {
+                    // SuperCategory als Überschrift: "Einkommen", "Wohnen", "Versicherungen" ...
+                    writeGroupHeader(table, superCategoryType.getName());
+                    headerIsAdded = true;
+                }
+
                 evenRowNumber = !evenRowNumber;
                 this.addCell(table, categoryType.getName(), FONT_ROW_CATEGORY);
                 values.stream().map(this::formatBetrag)
-//                        .map(betrag -> new Phrase(betrag, FONT_ROW_BETRAG))
                         .forEach(s -> this.addCell(table, s, FONT_ROW_BETRAG));
             }
         }
@@ -173,6 +178,7 @@ public class PDFExporter {
         PdfPCell pdfPCell = new PdfPCell();
         pdfPCell.setColspan(COLUMN_DEFINITION_SIZE.length - 1);
         pdfPCell.setBackgroundColor(HEADER_BACKGROUND_COLOR);
+        pdfPCell.setBorderColor(new Color(77, 107, 221));
         table.addCell(pdfPCell);
 
         evenRowNumber = true;
@@ -239,6 +245,7 @@ public class PDFExporter {
         PdfPCell pdfPCell = new PdfPCell();
         pdfPCell.setColspan(COLUMN_DEFINITION_SIZE.length);
         pdfPCell.setBorder(Rectangle.NO_BORDER);
+        pdfPCell.setBorderColor(new Color(77, 107, 221));
         table.addCell(pdfPCell);
     }
 
@@ -247,6 +254,7 @@ public class PDFExporter {
         PdfPCell pdfPCell = new PdfPCell(phrase);
         pdfPCell.setBackgroundColor(backgroundColor);
         pdfPCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        pdfPCell.setBorderColor(new Color(77, 107, 221));
         table.addCell(pdfPCell);
     }
 
