@@ -51,6 +51,7 @@ public class Calculator {
         calculateAusgabenGesamt(yearMonthsSorted);
         calculateMonatlicherUeberschuss(categories, yearMonthsSorted);
         calculateSparrateGesamt(categories, yearMonthsSorted);
+        calculateSparplan(categories, yearMonthsSorted);
         calculateStocks(stocks);
         calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
         calculateAuslagen(categories, yearMonthsSorted);
@@ -120,7 +121,9 @@ public class Calculator {
             Double cashCalculated =
                     cashIstBetragVormonat + monatlicherUeberschuss;
             Double diff = cashIstBetrag - cashCalculated;
-            addCalculation(ECalculationType.CASH_DIFFERENZ, yearMonth, diff);
+            if (Math.abs(diff) > 3) {
+                addCalculation(ECalculationType.CASH_DIFFERENZ, yearMonth, diff);
+            }
         });
     }
 
@@ -133,7 +136,7 @@ public class Calculator {
             double transferzahlungenGesamt = categories.stream()
                     .filter(categorie -> categorie.getType().getSuperCategoryType().equals(ESuperCategoryType.TRANSFER))
                     // Keine Ahnung wieso der Sparplan nicht dabei sein darf
-                    .filter(categorie -> !categorie.getType().equals(ECategoryType.SPARPLAN))
+                    .filter(categorie -> !categorie.getType().equals(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN))
                     .mapToDouble(categorie -> categorie.getValue(yearMonth))
                     .sum();
             double bargeldausgaben = getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
@@ -168,7 +171,7 @@ public class Calculator {
 
         List<YearMonth> allYearMonths = allTransactions.stream()
                 .map(Transaction::getYearMonthOfBuchungsdatum)
-                .filter(y -> y.getMonth().compareTo(now.getMonth()) < 0 || y.getYear() < now.getYear() )
+                .filter(y -> y.getMonth().compareTo(now.getMonth()) < 0 || y.getYear() < now.getYear())
                 .sorted()
                 .distinct()
                 .toList();
@@ -218,7 +221,7 @@ public class Calculator {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double monatlicherUeberschuss = getCalculationValue(ECalculationType.EINNAMEN_GESAMT, yearMonth)
                     + getCalculationValue(ECalculationType.AUSGABEN_GESAMT, yearMonth)
-                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
+                    + sumValuesOfCategoryTypes(categories, List.of(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN), yearMonth);
             addCalculation(ECalculationType.UEBERSCHUSS_MONAT, yearMonth, monatlicherUeberschuss);
         }
     }
@@ -226,7 +229,7 @@ public class Calculator {
     private void calculateAusgabenGesamt(List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
             double ausgabenGesamt = getCalculationValue(ECalculationType.GIROKONTO_AUSGABEN_FIX, yearMonth)
-                    + getCalculationValue(ECalculationType.AUSGABEN_VARIABEL, yearMonth)
+                    + getCalculationValue(ECalculationType.GIROKONTO_AUSGABEN_VARIABEL, yearMonth)
                     + getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
             addCalculation(ECalculationType.AUSGABEN_GESAMT, yearMonth, ausgabenGesamt);
         }
@@ -251,12 +254,21 @@ public class Calculator {
     // (Monatliche Sparrate + Monatlicher Überschuss)
     private void calculateSparrateGesamt(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
+            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN), yearMonth);
             // Sparrate ist negativ angegeben. Hier wird der postive Wert gebraucht
-            sparrate *= -1;
+            sparrate = Math.abs(sparrate);
             Double ueberschussMonat = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             double sparrateGesamt = sparrate + ueberschussMonat;
             addCalculation(ECalculationType.SPARRATE_GESAMT, yearMonth, sparrateGesamt);
+        }
+    }
+
+    private void calculateSparplan(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN), yearMonth);
+            // Sparrate ist negativ angegeben. Hier wird der postive Wert gebraucht
+            sparrate = Math.abs(sparrate);
+            addCalculation(ECalculationType.SPARPLAN, yearMonth, sparrate);
         }
     }
 
@@ -266,7 +278,7 @@ public class Calculator {
 //            double sparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.SPARPLAN), yearMonth);
 //            double bargeldausgaben = getCalculationValue(ECalculationType.BARGELD_AUSGABEN, yearMonth);
             double value = sumValues;
-            addCalculation(ECalculationType.AUSGABEN_VARIABEL, yearMonth, value);
+            addCalculation(ECalculationType.GIROKONTO_AUSGABEN_VARIABEL, yearMonth, value);
         }
 
     }

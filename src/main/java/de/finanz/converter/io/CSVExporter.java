@@ -36,7 +36,7 @@ public class CSVExporter {
     //    private static final String FILE_NAME_FORMAT = OUTPUT_PATH + FILE_NAME;
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
-            ECalculationType.AUSGABEN_VARIABEL,
+            ECalculationType.GIROKONTO_AUSGABEN_VARIABEL,
             ECalculationType.BARGELD_AUSGABEN,
             ECalculationType.AUSGABEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARRATE_GESAMT);

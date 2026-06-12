@@ -302,7 +302,7 @@ public enum ECategoryType {
                     && isUmsatztyp(transaction, EUmsatztyp.EINGANG);
         }
     },
-    SPARPLAN("Sparplan", ESuperCategoryType.TRANSFER) {
+    VERRECHNUNGSKONTO_SPARPLAN("Verrechnungskonto Sparplan", ESuperCategoryType.TRANSFER) {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {

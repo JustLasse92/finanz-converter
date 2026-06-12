@@ -9,24 +9,33 @@ import java.util.Arrays;
 @AllArgsConstructor
 @Getter
 public enum ECalculationType {
-    EINNAMEN_GESAMT("Einnahmen Gesamt"),
+    // Auslagen
     AUSLAGEN_EINGANG_GESAMT("Auslagen Eingang Gesamt"),
     AUSLAGEN_AUSGANG_GESAMT("Auslagen Ausgang Gesamt"),
+    // Einnahmen
+    EINNAMEN_GESAMT("Einnahmen Gesamt"),
+    // Ausgaben
     GIROKONTO_AUSGABEN_FIX("Girokonto fixe Ausgaben"),
+    GIROKONTO_AUSGABEN_VARIABEL("Girokonto variable Ausgaben"),
     BARGELD_AUSGABEN("Bargeldausgaben"),
-    AUSGABEN_VARIABEL("Girokonto variable Ausgaben"),
     AUSGABEN_GESAMT("Gesamte Ausgaben"),
+    // Sparrate
     UEBERSCHUSS_MONAT("Monatlicher Überschuss"),
+    SPARPLAN("Sparplan"),
     SPARRATE_GESAMT("Komplette Sparrate"),
+    // Differenz in den Berechnungen
+    CASH_DIFFERENZ("Cash Differenz"),
+    GIROKONTO_DIFFERENZ("Girokonto Differenz"),
+    // Bilanz
     BILANZ_MONAT("Monatliche Bilanz"),
+    // Kontostände
+    GIROKONTO_IST("Girokonto"),
     CASH("Summe Cash"),
+    // Wertpapiere
+    VERRECHNUNGSKONTO("Verrechnungskonto"),
     VANGUARD_FTSE_ALL_WORLD("Vanguard FTSE All-World"),
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
-    BITCOIN("Bitcoin"),
-    GIROKONTO_IST("Girokonto"),
-    GIROKONTO_DIFFERENZ("Girokonto Differenz"),
-    VERRECHNUNGSKONTO("Verrechnungskonto"),
-    CASH_DIFFERENZ("Cash Differenz");
+    BITCOIN("Bitcoin");
     private String name;
 
     public static ECalculationType findByName(String name) {
