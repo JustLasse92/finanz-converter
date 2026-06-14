@@ -35,7 +35,9 @@ public enum ECalculationType {
     VERRECHNUNGSKONTO("Verrechnungskonto"),
     VANGUARD_FTSE_ALL_WORLD("Vanguard FTSE All-World"),
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
-    BITCOIN("Bitcoin");
+    BITCOIN("Bitcoin"),
+    // Jahreswerte
+    SPARPLAN_DURCHSCHNITT("Durchschnittlicher Sparplan");
     private String name;
 
     public static ECalculationType findByName(String name) {

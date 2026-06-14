@@ -49,7 +49,7 @@ public class Bilanz {
 
     public void addCategoryValues(Categorie<ECategoryType> k) {
         Categorie<ECategoryType> currentCategorie = getCategory(k.getType());
-        k.getValues().forEach((currentCategorie::addValue));
+        k.getValuesYearMonths().forEach((currentCategorie::addValue));
         categories.put(currentCategorie.getType(), currentCategorie);
     }
 
@@ -82,7 +82,7 @@ public class Bilanz {
     public List<YearMonth> getYearMonthsSorted() {
         return getCategories().values()
                 .stream()
-                .map(k -> k.getValues().keySet())
+                .map(k -> k.getValuesYearMonths().keySet())
                 .flatMap(Collection::stream)
                 .distinct()
                 .sorted()

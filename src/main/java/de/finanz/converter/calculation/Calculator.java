@@ -59,6 +59,7 @@ public class Calculator {
         calculateMonatlicheBilanz(availableCashes, yearMonthsSorted);
         calculateGirokontoDifferenz(categories);
         calculateCashDifferenz();
+        calculateJahreswerte(categories, yearMonthsSorted);
     }
 
 
@@ -72,6 +73,23 @@ public class Calculator {
     public Categorie<ECalculationType> getCalculationCategory(ECalculationType calculationType) {
         return calculations.get(calculationType);
     }
+
+    private void calculateJahreswerte(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
+        Map<Integer, Double> sumSparratePerYear = new HashMap<>();
+        Map<Integer, Integer> monthsPerYear = new HashMap<>();
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            int year = yearMonth.getYear();
+            monthsPerYear.put(year, 1 + monthsPerYear.getOrDefault(year, 0));
+            double sumSparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN), yearMonth);
+            sumSparratePerYear.put(year, Math.abs(sumSparrate) + sumSparratePerYear.getOrDefault(year, 0.0));
+        }
+        for (Integer year : monthsPerYear.keySet()) {
+            double sparrateDurchschnitt = sumSparratePerYear.get(year) / monthsPerYear.get(year);
+            addCalculation(ECalculationType.SPARPLAN_DURCHSCHNITT, year, sparrateDurchschnitt);
+        }
+
+    }
+
 
     private void calculateBargeldausgaben(List<AvailableCash> availableCashes, Collection<Categorie<ECategoryType>> categories) {
         for (AvailableCash availableCash : availableCashes) {
@@ -114,7 +132,7 @@ public class Calculator {
 
     private void calculateCashDifferenz() {
         Categorie<ECalculationType> cashIst = calculations.get(ECalculationType.CASH);
-        Map<YearMonth, Double> cashIstValues = cashIst.getValues();
+        Map<YearMonth, Double> cashIstValues = cashIst.getValuesYearMonths();
         cashIstValues.forEach((yearMonth, cashIstBetrag) -> {
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             Double cashIstBetragVormonat = getCalculationValue(ECalculationType.CASH, yearMonth.minusMonths(1));
@@ -129,7 +147,7 @@ public class Calculator {
 
     private void calculateGirokontoDifferenz(Collection<Categorie<ECategoryType>> categories) {
         Categorie<ECalculationType> girokontoIst = calculations.get(ECalculationType.GIROKONTO_IST);
-        Map<YearMonth, Double> values = girokontoIst.getValues();
+        Map<YearMonth, Double> values = girokontoIst.getValuesYearMonths();
         values.forEach((yearMonth, girokontoIstBetrag) -> {
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
             Double girokontoIstBetragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
@@ -197,7 +215,7 @@ public class Calculator {
                 .filter(cash -> CASH_TYPS.contains(cash.getTyp()))
                 .forEach(availableCash -> addCalculation(ECalculationType.CASH, availableCash.getYearMonthOfDatum(), availableCash.getBetrag()));
 
-        getCalculationCategory(ECalculationType.GIROKONTO_IST).getValues()
+        getCalculationCategory(ECalculationType.GIROKONTO_IST).getValuesYearMonths()
                 .forEach(((yearMonth, aDouble) -> addCalculation(ECalculationType.CASH, yearMonth, aDouble)));
     }
 
@@ -214,6 +232,12 @@ public class Calculator {
         calculations.putIfAbsent(calculationType, new Categorie<>(calculationType));
         Categorie<ECalculationType> calculation = calculations.get(calculationType);
         calculation.addValue(yearMonth, value);
+    }
+
+    private void addCalculation(ECalculationType calculationType, Integer year, double value) {
+        calculations.putIfAbsent(calculationType, new Categorie<>(calculationType));
+        Categorie<ECalculationType> calculation = calculations.get(calculationType);
+        calculation.addValue(year, value);
     }
 
     // Monatlicher Überschuss = Einnahemen - Ausgaben - Sparrate

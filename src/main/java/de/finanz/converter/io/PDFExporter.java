@@ -51,6 +51,7 @@ public class PDFExporter {
     private static final Font FONT_ROW_BETRAG = FontFactory.getFont("Verdana", 7, 0);
     private static final String FILE_NAME_FORMAT = "bilanz_%d.pdf";
     private static final Path OUTPUT_PATH = Path.of(System.getenv("OUTPUT_PATH"));
+    private static final List<ECalculationType> CALCULATION_TYPE_JAHRESWERTE = List.of(ECalculationType.SPARPLAN_DURCHSCHNITT);
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.GIROKONTO_AUSGABEN_VARIABEL,
@@ -96,13 +97,18 @@ public class PDFExporter {
 
                         document.open();
 
-                        PdfPTable table = createTable(width);
+                        PdfPTable table = createTableYearMonth(width);
                         writeCategories(table);
                         document.add(table);
                         document.newPage();
 
-                        table = createTable(width);
-                        writeCalculations(table);
+                        table = createTableYearMonth(width);
+                        writeCalculationsYearMonth(table);
+                        document.add(table);
+                        document.newPage();
+
+                        table = createTableYear();
+                        writeCalculationsYear(table);
                         document.add(table);
 
                     } catch (DocumentException | IOException e) {
@@ -116,19 +122,49 @@ public class PDFExporter {
                 });
     }
 
-    private PdfPTable createTable(float width) {
+    private PdfPTable createTableYearMonth(float width) {
         PdfPTable table = new PdfPTable(COLUMN_DEFINITION_SIZE);
         table.getDefaultCell().enableBorderSide(1);
         table.setHorizontalAlignment(20);
         table.setTotalWidth(width - 10);
         table.setLockedWidth(true);
 
-        writeTableHeader(table);
+        writeTableHeaderYearMonth(table);
         return table;
     }
 
+    private PdfPTable createTableYear() {
+        PdfPTable table = new PdfPTable(CALCULATION_TYPE_JAHRESWERTE.size());
+        table.getDefaultCell().enableBorderSide(1);
+        table.setHorizontalAlignment(20);
+        // relative Breite
+        float[] widths = new float[CALCULATION_TYPE_JAHRESWERTE.size()];
+        for (int i = 0; i < CALCULATION_TYPE_JAHRESWERTE.size(); i++) {
+            widths[i] = CALCULATION_TYPE_JAHRESWERTE.get(i).getName().length() * 4.9f;
+        }
+        table.setHorizontalAlignment(Element.ALIGN_LEFT);
+        table.setTotalWidth(widths);
+        table.setLockedWidth(true);
+
+        writeTableHeaderYear(table);
+        return table;
+    }
+
+    private void writeTableHeaderYear(PdfPTable table) {
+        // Zeilen nach der SuperCategory bleiben leer
+        CALCULATION_TYPE_JAHRESWERTE.stream()
+                .map(ECalculationType::getName)
+                .forEach(s -> {
+                    Phrase phrase = new Phrase(s, FONT_HEADER);
+                    PdfPCell pdfPCell = new PdfPCell(phrase);
+                    pdfPCell.setBackgroundColor(COLOR_DARK_BLUE);
+                    pdfPCell.setBorderColor(COLOR_DARK_BLUE);
+                    table.addCell(pdfPCell);
+                });
+    }
+
     // "Kategorie","Januar","Februar","März" ...
-    private void writeTableHeader(PdfPTable table) {
+    private void writeTableHeaderYearMonth(PdfPTable table) {
         String categoryName = "Kategorie";
         PdfPCell pdfPCell = new PdfPCell(new Phrase(categoryName, FONT_HEADER));
         pdfPCell.setBackgroundColor(COLOR_DARK_BLUE);
@@ -191,7 +227,15 @@ public class PDFExporter {
     }
 
 
-    private void writeCalculations(PdfPTable table) {
+    private void writeCalculationsYear(PdfPTable table) {
+        for (ECalculationType type : CALCULATION_TYPE_JAHRESWERTE) {
+            evenRowNumber = !evenRowNumber;
+            ETableCellType tableCellType = getTableCellType(type);
+            addCell(table, formatBetrag(calculator.getCalculationCategory(type).getValue(currentYear)), FONT_ROW_BETRAG, tableCellType);
+        }
+    }
+
+    private void writeCalculationsYearMonth(PdfPTable table) {
         writeCalculationsOfTypes(table, "Einnahmen", CALCULATION_TYPE_EINNAHMEN);
         writeCalculationsOfTypes(table, "Ausgaben", CALCULATION_TYPE_AUSGABEN);
         writeCalculationsOfTypes(table, "Sparrate", CALCULATION_TYPE_SPARRATE);
