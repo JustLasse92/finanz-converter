@@ -13,6 +13,7 @@ import de.finanz.converter.transaction.Transaction;
 import java.time.Month;
 import java.time.YearMonth;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +54,13 @@ public class Calculator {
         calculateSparrateGesamt(categories, yearMonthsSorted);
         calculateSparplan(categories, yearMonthsSorted);
         calculateStocks(stocks);
-        calculateGirokontoIst(allTransactions, bilanz.getUmsatz2023());
+        calculateGirokontoMinMaxIst(allTransactions, bilanz.getUmsatz2023());
         calculateAuslagen(categories, yearMonthsSorted);
         calculateCash(availableCashes);
         calculateMonatlicheBilanz(availableCashes, yearMonthsSorted);
         calculateGirokontoDifferenz(categories);
         calculateCashDifferenz();
+        calculateRendite(availableCashes, yearMonthsSorted);
         calculateJahreswerte(categories, yearMonthsSorted);
     }
 
@@ -74,18 +76,50 @@ public class Calculator {
         return calculations.get(calculationType);
     }
 
+    private void calculateRendite(List<AvailableCash> availableCashes, List<YearMonth> yearMonthsSorted) {
+        for (YearMonth yearMonth : yearMonthsSorted) {
+            Double vanguard = getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, yearMonth);
+            Double nasdaq = getCalculationValue(ECalculationType.ISHARES_NASDAQ_100, yearMonth);
+            Double bitcoin = getCalculationValue(ECalculationType.BITCOIN, yearMonth);
+            Double vl = availableCashes.stream()
+                    .filter(cash -> cash.getTyp().equals(EAvailableCashTyp.AKTIEN_VL))
+                    .filter(cash -> cash.getYearMonthOfDatum().equals(yearMonth))
+                    .mapToDouble(AvailableCash::getBetrag)
+                    .sum();
+
+            Double erwarteteRendite = (vanguard + nasdaq + bitcoin + vl) * 0.07 / 12;
+            addCalculation(ECalculationType.RENDITE_DURCHSCHNITT, yearMonth, erwarteteRendite);
+        }
+
+    }
+
     private void calculateJahreswerte(Collection<Categorie<ECategoryType>> categories, List<YearMonth> yearMonthsSorted) {
         Map<Integer, Double> sumSparratePerYear = new HashMap<>();
-        Map<Integer, Integer> monthsPerYear = new HashMap<>();
+        Map<Integer, Double> sumSparrateTotalPerYear = new HashMap<>();
+        Map<Integer, Double> sumSparrateTotalWithYieldPerYear = new HashMap<>();
+
         for (YearMonth yearMonth : yearMonthsSorted) {
             int year = yearMonth.getYear();
-            monthsPerYear.put(year, 1 + monthsPerYear.getOrDefault(year, 0));
             double sumSparrate = sumValuesOfCategoryTypes(categories, List.of(ECategoryType.VERRECHNUNGSKONTO_SPARPLAN), yearMonth);
             sumSparratePerYear.put(year, Math.abs(sumSparrate) + sumSparratePerYear.getOrDefault(year, 0.0));
+            double sparrateGesamtYearMonth = Math.abs(getCalculationValue(ECalculationType.SPARRATE_GESAMT, yearMonth)) + sumSparrateTotalPerYear.getOrDefault(year, 0.0);
+            sumSparrateTotalPerYear.put(year, sparrateGesamtYearMonth);
+            sumSparrateTotalWithYieldPerYear.put(year, Math.abs(getCalculationValue(ECalculationType.SPARRATE_GESAMT, yearMonth))
+                    + Math.abs(getCalculationValue(ECalculationType.RENDITE_DURCHSCHNITT, yearMonth))
+                    + sumSparrateTotalWithYieldPerYear.getOrDefault(year, 0.0));
         }
-        for (Integer year : monthsPerYear.keySet()) {
-            double sparrateDurchschnitt = sumSparratePerYear.get(year) / monthsPerYear.get(year);
+
+        List<Integer> years = yearMonthsSorted.stream().map(YearMonth::getYear).distinct().toList();
+        for (Integer year : years) {
+            long anzahlMonate = yearMonthsSorted.stream().filter(ym -> ym.getYear() == year).count();
+            double sparrateDurchschnitt = sumSparratePerYear.get(year) / anzahlMonate;
             addCalculation(ECalculationType.SPARPLAN_DURCHSCHNITT, year, sparrateDurchschnitt);
+
+            double sparrateGesamtDurchschnitt = sumSparrateTotalPerYear.get(year) / anzahlMonate;
+            addCalculation(ECalculationType.SPARRATE_DURCHSCHNITT, year, sparrateGesamtDurchschnitt);
+
+            double renditeDurchschnitt = sumSparrateTotalWithYieldPerYear.get(year) / anzahlMonate;
+            addCalculation(ECalculationType.SPARRATE_DURCHSCHNITT_MIT_RENDITE, year, renditeDurchschnitt);
         }
 
     }
@@ -131,11 +165,11 @@ public class Calculator {
     }
 
     private void calculateCashDifferenz() {
-        Categorie<ECalculationType> cashIst = calculations.get(ECalculationType.CASH);
+        Categorie<ECalculationType> cashIst = calculations.get(ECalculationType.CASH_IST);
         Map<YearMonth, Double> cashIstValues = cashIst.getValuesYearMonths();
         cashIstValues.forEach((yearMonth, cashIstBetrag) -> {
             Double monatlicherUeberschuss = getCalculationValue(ECalculationType.UEBERSCHUSS_MONAT, yearMonth);
-            Double cashIstBetragVormonat = getCalculationValue(ECalculationType.CASH, yearMonth.minusMonths(1));
+            Double cashIstBetragVormonat = getCalculationValue(ECalculationType.CASH_IST, yearMonth.minusMonths(1));
             Double cashCalculated =
                     cashIstBetragVormonat + monatlicherUeberschuss;
             Double diff = cashIstBetrag - cashCalculated;
@@ -202,6 +236,43 @@ public class Calculator {
         }
     }
 
+    private void calculateGirokontoMinMaxIst(List<Transaction> allTransactions, final Double umsatz2023) {
+        addCalculation(ECalculationType.GIROKONTO_IST, YearMonth.of(2023, Month.DECEMBER), umsatz2023);
+        YearMonth now = YearMonth.now();
+
+        List<YearMonth> allYearMonths = allTransactions.stream()
+                .map(Transaction::getYearMonthOfBuchungsdatum)
+                .filter(y -> y.getMonth().compareTo(now.getMonth()) < 0 || y.getYear() < now.getYear())
+                .sorted()
+                .distinct()
+                .toList();
+
+        for (YearMonth yearMonth : allYearMonths) {
+            Double betragVormonat = getCalculationValue(ECalculationType.GIROKONTO_IST, yearMonth.minusMonths(1));
+            Double girokontoIstBetrag = betragVormonat;
+            Double girokontoMinBetrag = girokontoIstBetrag;
+
+            List<Transaction> transactions = allTransactions.stream()
+                    .filter(t -> t.getYearMonthOfBuchungsdatum().equals(yearMonth))
+                    .sorted(Comparator.comparing(Transaction::getBuchungsdatum))
+                    .toList();
+            List<Double> betraege = transactions.stream()
+                    .map(Transaction::getBetrag)
+                    .toList();
+
+
+            for (Double betrag : betraege) {
+                girokontoIstBetrag += betrag;
+                if (girokontoIstBetrag < girokontoMinBetrag) {
+                    girokontoMinBetrag = girokontoIstBetrag;
+                }
+            }
+
+            addCalculation(ECalculationType.GIROKONTO_IST, yearMonth, girokontoIstBetrag);
+            addCalculation(ECalculationType.GIROKONTO_MIN, yearMonth, girokontoMinBetrag);
+        }
+    }
+
     private Double sumAllTransactionsInYearMonth(List<Transaction> transactions, YearMonth yearMonth) {
         return transactions.stream()
                 .filter(t -> t.getYearMonthOfBuchungsdatum().equals(yearMonth))
@@ -213,10 +284,16 @@ public class Calculator {
     private void calculateCash(List<AvailableCash> availableCashes) {
         availableCashes.stream()
                 .filter(cash -> CASH_TYPS.contains(cash.getTyp()))
-                .forEach(availableCash -> addCalculation(ECalculationType.CASH, availableCash.getYearMonthOfDatum(), availableCash.getBetrag()));
+                .forEach(availableCash -> {
+                    addCalculation(ECalculationType.CASH_IST, availableCash.getYearMonthOfDatum(), availableCash.getBetrag());
+                    addCalculation(ECalculationType.CASH_MIN, availableCash.getYearMonthOfDatum(), availableCash.getBetrag());
+                });
 
         getCalculationCategory(ECalculationType.GIROKONTO_IST).getValuesYearMonths()
-                .forEach(((yearMonth, aDouble) -> addCalculation(ECalculationType.CASH, yearMonth, aDouble)));
+                .forEach(((yearMonth, aDouble) -> addCalculation(ECalculationType.CASH_IST, yearMonth, aDouble)));
+
+        getCalculationCategory(ECalculationType.GIROKONTO_MIN).getValuesYearMonths()
+                .forEach(((yearMonth, aDouble) -> addCalculation(ECalculationType.CASH_MIN, yearMonth, aDouble)));
     }
 
     private void calculateStocks(List<Stock> stocks) {
@@ -261,7 +338,7 @@ public class Calculator {
 
     private void calculateMonatlicheBilanz(List<AvailableCash> availableCashes, List<YearMonth> yearMonthsSorted) {
         for (YearMonth yearMonth : yearMonthsSorted) {
-            double bilanz = getCalculationValue(ECalculationType.CASH, yearMonth)
+            double bilanz = getCalculationValue(ECalculationType.CASH_IST, yearMonth)
                     + getCalculationValue(ECalculationType.VANGUARD_FTSE_ALL_WORLD, yearMonth)
                     + getCalculationValue(ECalculationType.ISHARES_NASDAQ_100, yearMonth)
                     + getCalculationValue(ECalculationType.VERRECHNUNGSKONTO, yearMonth)

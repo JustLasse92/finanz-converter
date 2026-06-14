@@ -51,15 +51,15 @@ public class PDFExporter {
     private static final Font FONT_ROW_BETRAG = FontFactory.getFont("Verdana", 7, 0);
     private static final String FILE_NAME_FORMAT = "bilanz_%d.pdf";
     private static final Path OUTPUT_PATH = Path.of(System.getenv("OUTPUT_PATH"));
-    private static final List<ECalculationType> CALCULATION_TYPE_JAHRESWERTE = List.of(ECalculationType.SPARPLAN_DURCHSCHNITT);
+    private static final List<ECalculationType> CALCULATION_TYPE_JAHRESWERTE = List.of(ECalculationType.SPARPLAN_DURCHSCHNITT, ECalculationType.SPARRATE_DURCHSCHNITT, ECalculationType.SPARRATE_DURCHSCHNITT_MIT_RENDITE);
     private static final List<ECalculationType> CALCULATION_TYPE_EINNAHMEN = List.of(ECalculationType.EINNAMEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_AUSGABEN = List.of(ECalculationType.GIROKONTO_AUSGABEN_FIX,
             ECalculationType.GIROKONTO_AUSGABEN_VARIABEL,
             ECalculationType.BARGELD_AUSGABEN,
             ECalculationType.AUSGABEN_GESAMT);
-    private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARPLAN, ECalculationType.SPARRATE_GESAMT);
+    private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARPLAN, ECalculationType.SPARRATE_GESAMT, ECalculationType.RENDITE_DURCHSCHNITT);
     private static final List<ECalculationType> CALCULATION_TYPE_KONTOSTAENDE =
-            List.of(ECalculationType.GIROKONTO_IST, ECalculationType.CASH);
+            List.of(ECalculationType.GIROKONTO_IST, ECalculationType.GIROKONTO_MIN, ECalculationType.CASH_IST, ECalculationType.CASH_MIN);
     private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO, EAvailableCashTyp.BARGELD);
     private static final List<ECalculationType> CALCULATION_TYPE_WERTPAPIERE =
             List.of(ECalculationType.VERRECHNUNGSKONTO, ECalculationType.VANGUARD_FTSE_ALL_WORLD,

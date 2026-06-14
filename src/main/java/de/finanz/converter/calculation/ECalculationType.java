@@ -22,6 +22,7 @@ public enum ECalculationType {
     // Sparrate
     UEBERSCHUSS_MONAT("Monatlicher Überschuss"),
     SPARPLAN("Sparplan"),
+    RENDITE_DURCHSCHNITT("Erwartete Rendite (Durchschnitt)"),
     SPARRATE_GESAMT("Komplette Sparrate"),
     // Differenz in den Berechnungen
     CASH_DIFFERENZ("Cash Differenz"),
@@ -29,15 +30,19 @@ public enum ECalculationType {
     // Bilanz
     BILANZ_MONAT("Monatliche Bilanz"),
     // Kontostände
-    GIROKONTO_IST("Girokonto"),
-    CASH("Summe Cash"),
+    GIROKONTO_IST("Girokonto (Monatsende)"),
+    GIROKONTO_MIN("Girokonto (Minimum)"),
+    CASH_IST("Summe Cash (Monatsende)"),
+    CASH_MIN("Summe Cash (Minimum)"),
     // Wertpapiere
     VERRECHNUNGSKONTO("Verrechnungskonto"),
     VANGUARD_FTSE_ALL_WORLD("Vanguard FTSE All-World"),
     ISHARES_NASDAQ_100("iShares Nasdaq 100"),
     BITCOIN("Bitcoin"),
     // Jahreswerte
-    SPARPLAN_DURCHSCHNITT("Durchschnittlicher Sparplan");
+    SPARPLAN_DURCHSCHNITT("Durchschnittlicher Sparplan"),
+    SPARRATE_DURCHSCHNITT("Durchschnittlicher Sparrate"),
+    SPARRATE_DURCHSCHNITT_MIT_RENDITE("Durchschnittlicher Sparrate mit Rendite");
     private String name;
 
     public static ECalculationType findByName(String name) {

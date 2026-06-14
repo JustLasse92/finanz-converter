@@ -41,7 +41,7 @@ public class CSVExporter {
             ECalculationType.AUSGABEN_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_SPARRATE = List.of(ECalculationType.UEBERSCHUSS_MONAT, ECalculationType.SPARRATE_GESAMT);
     private static final List<ECalculationType> CALCULATION_TYPE_KONTOSTAENDE =
-            List.of(ECalculationType.GIROKONTO_IST, ECalculationType.CASH);
+            List.of(ECalculationType.GIROKONTO_IST, ECalculationType.CASH_IST);
     private static final List<EAvailableCashTyp> AVAILABLE_CASH_LIST = List.of(EAvailableCashTyp.TAGESGELDKONTO, EAvailableCashTyp.BARGELD);
     private static final List<ECalculationType> CALCULATION_TYPE_WERTPAPIERE =
             List.of(ECalculationType.VERRECHNUNGSKONTO, ECalculationType.VANGUARD_FTSE_ALL_WORLD,
