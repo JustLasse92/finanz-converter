@@ -44,8 +44,8 @@ public class TransactionHelper {
         }
 
         Categorie<ECategoryType> categorie = new Categorie<>(categoryType);
-        YearMonth month = transaction.getYearMonthOfBuchungsdatum();
-        categorie.addValue(month, transaction.getBetrag());
+        YearMonth yearMonth = transaction.getYearMonthOfBuchungsdatum();
+        categorie.addValue(yearMonth, transaction.getBetrag());
         return categorie;
     }
 

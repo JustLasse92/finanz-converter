@@ -90,7 +90,7 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             return containsAnyVerwendungszweck(transaction, "1049524567778/PP.4622.PP", "Ihr Einkauf bei GitHub, Inc", "197034, JustLasse")
-                    || containsAnyEmpfaenger(transaction, "NANU.NANA");
+                    || containsAnyEmpfaenger(transaction, "NANU.NANA", "GALERIA.BREMEN", "WK.NEO");
         }
     },
     EINTRITT_KULTUR("Eintritt Kultur", ESuperCategoryType.ENTERTAINMENT) {
@@ -133,7 +133,7 @@ public enum ECategoryType {
                                 ".KIOSK/BREMERHAVEN", "Haferkamp", "Restaurant", "HBF.Saarbruecken", "BackWerk",
                         "Cafe.Extrablatt", "GASTSTAETTE.SCHMIEDING", "KAGI.BAR", "RONA.COCKTAILBAR", "Pizzeria",
                         "Alexandra.Ausb/Bremerhaven", "KiK.Fil..8322/Bremerhaven", "LE.CROBAG.SHOP", "BACKHAUS",
-                        "Imbiss.CafeBistr", "Ditsch", "Mueller...Egerer", "YORMAS.AG")
+                        "Imbiss.CafeBistr", "Ditsch", "Mueller...Egerer", "YORMAS.AG", "LTLengermannTries", "MERCAPLAYA.SAN.JUAN")
                         || containsAnyVerwendungszweck(transaction, "Pizzamann", "Ihr Einkauf bei Kevin Ricke", "Sushi");
             }
             return false;
@@ -151,7 +151,8 @@ public enum ECategoryType {
         @Override
         public boolean matches(Transaction transaction) {
             if (isUmsatztyp(transaction, EUmsatztyp.AUSGANG)) {
-                return containsAnyVerwendungszweck(transaction, "Miete", "Beteiligung Nebenkosten", "Anteil Nebenkosten");
+                return containsAnyVerwendungszweck(transaction, "Miete", "Beteiligung Nebenkosten", "Anteil " +
+                        "Nebenkosten", "Nachzahlung Nebenkosten");
             }
             return false;
         }
@@ -231,16 +232,6 @@ public enum ECategoryType {
                     EUmsatztyp.AUSGANG));
         }
     },
-    VERSANDKOSTEN("Versandkosten", ESuperCategoryType.SONSTIGE) {
-        @Override
-        public boolean matches(Transaction transaction) {
-            // Käufe und Rückzahlungen
-            return ((containsAnyEmpfaenger(transaction, "Deutsche.Post") ||
-                    containsAnyVerwendungszweck(transaction, "Versandkosten", "Ihr Einkauf bei Deutsche Post " +
-                            "AG", "Porto"
-                    )) && isUmsatztyp(transaction, EUmsatztyp.AUSGANG));
-        }
-    },
     MOEBEL_EINRICHTUNG("Möbel/Einrichtung", ESuperCategoryType.LEBENSHALTUNG) {
         @Override
         public boolean matches(Transaction transaction) {
@@ -292,7 +283,9 @@ public enum ECategoryType {
     SONSTIGE_LEBENSHALTUNG("Sonstiges", ESuperCategoryType.LEBENSHALTUNG) {
         @Override
         public boolean matches(Transaction transaction) {
-            return containsAnyVerwendungszweck(transaction, "Kaputtes Einmachglas") || containsAnyEmpfaenger(transaction, "SPIEGLEIN.SPIEG");
+            return containsAnyVerwendungszweck(transaction, "Kaputtes Einmachglas", "Versandkosten",
+                    "Ihr Einkauf bei Deutsche Post AG", "Porto")
+                    || containsAnyEmpfaenger(transaction, "SPIEGLEIN.SPIEG", "Deutsche.Post");
         }
     },
     GEHALT("Gehalt", ESuperCategoryType.EINKOMMEN) {
