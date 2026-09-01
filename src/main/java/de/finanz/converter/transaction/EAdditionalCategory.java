@@ -1,5 +1,5 @@
 package de.finanz.converter.transaction;
 
 public enum EAdditionalCategory {
-    AUSLAGEN
+    AUSLAGEN, EINZAHLUNG_SCALABLE_CAPITAL
 }

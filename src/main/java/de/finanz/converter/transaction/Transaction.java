@@ -91,8 +91,6 @@ public class Transaction {
         return transaction != null
                 && (transaction.getBuchungsdatum() == null || this.buchungsdatum.equals(transaction.getBuchungsdatum()))
                 && (transaction.getWertstellug() == null || this.getWertstellug().equals(transaction.getWertstellug()))
-                && (transaction.getSender() == null || this.getSender().equals(transaction.getSender()))
-                && (transaction.getEmpfaenger() == null || this.getEmpfaenger().equals(transaction.getEmpfaenger()))
                 && (transaction.getVerwendungszweck() == null || this.getVerwendungszweck().equals(transaction.getVerwendungszweck()))
                 && (transaction.getStatus() == null || this.getStatus().equals(transaction.getStatus()))
                 && (transaction.getIban() == null || this.getIban().equals(transaction.getIban()))

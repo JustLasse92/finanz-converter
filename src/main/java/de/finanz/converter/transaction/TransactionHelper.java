@@ -24,12 +24,11 @@ public class TransactionHelper {
         ECategoryType categoryType;
         EAdditionalCategory additionalCategory = transaction.getAdditionalCategory();
         if (additionalCategory != null) {
-            if (additionalCategory == EAdditionalCategory.AUSLAGEN) {
-                categoryType = transaction.getUmsatztyp().equals(EUmsatztyp.AUSGANG) ?
+            categoryType = switch (additionalCategory) {
+                case AUSLAGEN -> transaction.getUmsatztyp().equals(EUmsatztyp.AUSGANG) ?
                         ECategoryType.AUSLAGEN_AUSGANG : ECategoryType.AUSLAGEN_EINGANG;
-            } else {
-                throw new FinanzConverterException("Unexpected value: " + additionalCategory);
-            }
+                case EINZAHLUNG_SCALABLE_CAPITAL -> ECategoryType.VERRECHNUNGSKONTO_SPARPLAN;
+            };
         } else {
             // Alle anderen Kategorien werden über die Matcher bestimmt
             List<ECategoryType> categoryTypeList = Arrays.stream(ECategoryType.values())
